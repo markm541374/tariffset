@@ -1,1 +1,1 @@
-init.
+Project aim is to use GPGO to determine optimum electricity tariffs under a scenario where all consumer devices are smart so cam alter their use profice within operating constraints to minimise absolute cost/power/greenness.
