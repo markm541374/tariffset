@@ -1,0 +1,595 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\usepackage{amsmath}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\var}{var}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Gaussian Process Global Optimisation with Multistep Lookahead
+\end_layout
+
+\begin_layout Subsection
+A
+\end_layout
+
+\begin_layout Standard
+The aim is to find the minimising argument of the objective function
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+x_{min}=\argmin_{x}f\left(x\right)\qquad\mathbf{\mathit{x}}\in\mathbb{R^{\mathit{m}}},\quad f:\mathbb{R^{\mathit{m}}}\rightarrow\mathbb{R}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Since the objective function is expensive to evaluate we wish to make as
+ few evaluations as possible.
+ To determine which point to evaluate next we make inference about the objective
+ function by approximating it as a Gaussin process with some mean and kernel
+ function.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+f\sim\mathcal{GP}\left(m,k\right)
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Given a set of points that have already been evaluated
+\begin_inset Formula 
+\begin{align*}
+X & =\left[x_{i}\right]\\
+F & =\left[f\left(x_{i}\right)\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A belief is induced over the value of 
+\begin_inset Formula $f_{s}$
+\end_inset
+
+at 
+\begin_inset Formula $x_{s}$
+\end_inset
+
+
+\begin_inset Formula 
+\[
+f_{s}\mid F,X\sim\mathcal{N}\left(\left\langle f_{s}\right\rangle ,\var\left(f_{s}\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where
+\begin_inset Formula 
+\begin{align*}
+\left\langle f_{s}\right\rangle  & =K_{sx}K_{xx}^{-1}F\\
+\var\left(f_{s}\right) & =K_{ss}-K_{sx}K_{xx}^{-1}K_{sx}^{T}\\
+K_{ss} & =K\left(X,X\right)\\
+K_{sx} & =K\left(F,X\right)\\
+K_{xx} & =K\left(F,F\right)\\
+K\left(A,B\right) & =\left[k(a_{i},b_{j})\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Given a set of 
+\begin_inset Formula $n$
+\end_inset
+
+ observations 
+\begin_inset Formula $X_{n},F_{n}$
+\end_inset
+
+the current best is
+\begin_inset Formula 
+\[
+f_{n}^{opt}=\min_{i}F_{n}\left[i\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+located at
+\begin_inset Formula 
+\[
+x_{n}^{opt}=x_{\argmin_{i}F_{n}\left[i\right]}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If a new evaluation 
+\begin_inset Formula $f_{n+1}$
+\end_inset
+
+is made the improvement is
+\begin_inset Formula 
+\[
+\lambda_{n\rightarrow n+1}\left(f_{n+1}\mid X_{n},F_{n}\right)=\max\left(0,f_{n}^{opt}-f_{n+1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The expected improvement at 
+\begin_inset Formula $x_{n+1}$
+\end_inset
+
+before the evaluation is made is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\left\langle \lambda_{n\rightarrow n+1}\left(x_{n+1}\mid X_{n},F_{n}\right)\right\rangle  & =\intop_{-\infty}^{\infty}\lambda_{1}\left(f_{s}\mid X_{n},F_{n}\right)p\left(f_{n+1}\mid X_{n},F_{n},x_{n+1}\right)\mathrm{d}f_{n+1}\\
+ & =\intop_{-\infty}^{f_{n}^{opt}}\left(f_{n}^{opt}-f_{n+1}\right)p\left(f_{n+1}\mid X_{n},F_{n},x_{n+1}\right)\mathrm{d}f_{n+1}\\
+ & =integral(linear*gaussian)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+To the location to evaluate next given 
+\begin_inset Formula $X_{n},F_{n}$
+\end_inset
+
+ to maximise the expectation of improvement in the observed minimum looking
+ one step ahead is therefore
+\begin_inset Formula 
+\begin{equation}
+x^{\mathcal{EI}^{1}}\mid X_{n},F_{n}=\argmax_{x_{s}}\left\langle \lambda_{n\rightarrow n+1}\left(x_{s}\mid X_{n},F_{n}\right)\right\rangle \label{eq:EI1def}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+B
+\end_layout
+
+\begin_layout Standard
+To look further ahead given 
+\begin_inset Formula $X_{n},F_{n}$
+\end_inset
+
+ we can postulate the result of the next evaluation 
+\begin_inset Formula $\widehat{x}_{n+1}$
+\end_inset
+
+ , 
+\begin_inset Formula $\widehat{f}_{n+1}$
+\end_inset
+
+.
+ Which occurs with probability
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p\left(\widehat{f}_{n+1}\mid\widehat{x}_{n+1},X_{n},F_{n}\right)=\mathcal{N}\left(mean:K_{sx}K_{xx}^{-1}F,variance:K_{ss}-K_{sx}K_{xx}^{-1}K_{sx}^{T}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We define
+\begin_inset Formula 
+\begin{align*}
+\widehat{X}_{n+1} & =\begin{bmatrix}X_{n} & \widehat{x}_{n+1}\end{bmatrix}\\
+\widehat{F}_{n+1} & =\begin{bmatrix}F_{n} & \widehat{f}_{n+1}\end{bmatrix}\\
+\widehat{f}_{n+1}^{opt} & =\min\left(\widehat{f}_{n+1},f_{n}^{opt}\right)\\
+\widehat{\lambda}_{n\rightarrow n+1} & =\max\left(0,f_{n}^{opt}-\widehat{f}_{n+1}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Given 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\widehat{X}_{n+1},\widehat{F}_{n+1}$
+\end_inset
+
+ the improvement from 
+\begin_inset Formula $n+1$
+\end_inset
+
+ to 
+\begin_inset Formula $n+2$
+\end_inset
+
+ is
+\begin_inset Formula 
+\[
+\lambda_{n+1\rightarrow n+2}\left(\widehat{x}_{n+2}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)=\max\left(0,\widehat{f}_{n+1}^{opt}-f_{n+2}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and has expectation
+\begin_inset Formula 
+\[
+\left\langle \lambda_{n+1\rightarrow n+2}\left(\widehat{x}_{n+2}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)\right\rangle =\intop_{-\infty}^{\infty}\lambda_{n+1\rightarrow n+2}\left(f_{n+2}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)p\left(f_{n+2}\mid\widehat{X}_{n+1},\widehat{F}_{n+1},\widehat{x}_{n+2}\right)\mathrm{d}f_{n+2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which is an analytic integral.
+ For maximum expected imrpovement 
+\begin_inset Formula $\widehat{x}_{n+2}$
+\end_inset
+
+ is located at
+\begin_inset Formula 
+\begin{align*}
+\widehat{x}_{n+2} & =\argmax_{x_{s}}\left\langle \lambda_{n+1\rightarrow n+2}\left(x_{s}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)\right\rangle \\
+ & =x^{\mathcal{EI}^{1}}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The two step expected improvement is therefore
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\lambda_{n\rightarrow n+2}\left(x_{n+1}\mid X_{n},F_{n}\right)=\intop_{-\infty}^{\infty}\left[\widehat{\lambda}_{n\rightarrow n+1}+\left\langle \lambda_{n+1\rightarrow n+2}\left(x^{\mathcal{EI}^{1}}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)\right\rangle \right]p\left(\widehat{f}_{n+1}\mid X_{n},F_{n},x_{n+1}\right)\mathrm{d}\widehat{f}_{n+1}\label{eq:ff}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+And is found at
+\begin_inset Formula 
+\begin{equation}
+x^{\mathcal{EI}^{2}}\mid X_{n},F_{n}=\argmax_{x_{s}}\lambda_{n\rightarrow n+2}\left(x_{s}\mid X_{n},F_{n}\right)\label{eq:EI2def}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Implementation
+\end_layout
+
+\begin_layout Standard
+The above formulae are not analytic so cannot be directly evaluated.
+ Furthermore the Gaussian process usually has hyperparameters which should
+ be integrated over in evaluating the expected improvement.
+ That is if the GP is
+\begin_inset Formula 
+\[
+f\sim\mathcal{GP}\left(m,k\left(\theta\right)\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+then the expected improvement at 
+\begin_inset Formula $x_{n+1}$
+\end_inset
+
+ given 
+\begin_inset Formula $X_{n},F_{n}$
+\end_inset
+
+ is 
+\begin_inset Formula 
+\[
+\left\langle \lambda_{n\rightarrow n+1}\left(x_{n+1}\mid X_{n},F_{n}\right)\right\rangle =\intop_{-\infty}^{\infty}\intop_{-\infty}^{f_{n}^{opt}}\left(f_{n}^{opt}-f_{n+1}\right)p\left(f_{n+1}\mid X_{n},F_{n},x_{n+1},\theta\right)\mathrm{d}f_{n+1}\: p(\theta\mid X_{n},F_{n})\mathrm{d}\theta
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where
+\begin_inset Formula 
+\[
+p(\theta\mid X_{n},F_{n})=\frac{p(F_{n}\mid\theta,X_{n})p\left(\theta\right)}{\int p(F_{n}\mid\theta,X_{n})p\left(\theta\right)\mathrm{d}\theta}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $p\left(\theta\right)$
+\end_inset
+
+is the prior on the hyperparameters and 
+\begin_inset Formula $p(F_{n}\mid\theta,X_{n})$
+\end_inset
+
+ is the likelihood given by
+\begin_inset Formula 
+\[
+\log\left(p(F_{n}\mid\theta,X_{n})\right)=-\frac{1}{2}F^{T}K_{xx}^{-1}F-\frac{1}{2}\log\left|K_{xx}\right|-\frac{n}{2}\log\left(2\pi\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This is not a simple integral so is implemented as a numerical integral
+ using a set of samples of possible hyperparameters 
+\begin_inset Formula $\Theta$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left\langle \lambda_{n\rightarrow n+1}\left(x_{n+1}\mid X_{n},F_{n}\right)\right\rangle =\sum_{\theta\in\Theta}\:\intop_{-\infty}^{f_{n}^{opt}}\left(f_{n}^{opt}-f_{n+1}\right)p\left(f_{n+1}\mid X_{n},F_{n},x_{n+1},\theta\right)\mathrm{d}f_{n+1}p(\theta\mid X_{n},F_{n})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+p(\theta\mid X_{n},F_{n})=\frac{p(F_{n}\mid\theta,X_{n})p\left(\theta\right)}{\sum_{\theta\in\Theta}p(F_{n}\mid\theta,X_{n})p\left(\theta\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Or a more complex method such as Bayesian MC can be used, giving a weighted
+ sum, but the basis in a set of 
+\begin_inset Formula $\theta\in\Theta$
+\end_inset
+
+ remains the same.
+\end_layout
+
+\begin_layout Standard
+Furthermore since the 1 step improvement is numerically evaluated then the
+ integral over it used in the two step folmula must also be numerical.
+ That is formula
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:ff"
+
+\end_inset
+
+ becomes
+\begin_inset Formula 
+\[
+\lambda_{n\rightarrow n+2}\left(x_{n+1}\mid X_{n},F_{n}\right)=\sum_{\widehat{f}_{n+1}\in H}\left[\widehat{\lambda}_{n\rightarrow n+1}+\left\langle \lambda_{n+1\rightarrow n+2}\left(x^{\mathcal{EI}^{1}}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)\right\rangle \right]p\left(\widehat{f}_{n+1}\mid X_{n},F_{n},x_{n+1}\right)\mathrm{d}\widehat{f}_{n+1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Or a weighted sum as before.
+\end_layout
+
+\begin_layout Standard
+The arxmax evaluation in both the one and two step formulae can be implemented
+ by any global search function.
+ We use DIRECT for the one step search defined in equation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:EI1def"
+
+\end_inset
+
+, however since the argument of the two step search in Equation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:EI2def"
+
+\end_inset
+
+ is complex, involving multiple levels of numerical integration, a one step
+ GPGO is used so that the maximum can be found with a minimum number of
+ evaluations.
+\end_layout
+
+\begin_layout Subsection
+Trick
+\end_layout
+
+\begin_layout Standard
+In the two step routine, for a given 
+\begin_inset Formula $\theta$
+\end_inset
+
+, and for a given 
+\begin_inset Formula $\widehat{x}_{n+1}$
+\end_inset
+
+the 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $x^{\mathcal{EI}^{1}}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}$
+\end_inset
+
+ location must be found for all 
+\begin_inset Formula $\widehat{f}_{n+1}\in H$
+\end_inset
+
+.
+ This involves computing 
+\begin_inset Formula $\left\langle f_{n+2}\mid\widehat{f}_{n+1}\right\rangle ,\var\left(f_{n+2}\mid\widehat{f}_{n+1}\right)$
+\end_inset
+
+ at all the 
+\begin_inset Formula $\widehat{x}_{n+2}$
+\end_inset
+
+ locations on the search path for every 
+\begin_inset Formula $\widehat{f}_{n+1}\in H$
+\end_inset
+
+ and using them in calculation of the expected improvement.
+ 
+\end_layout
+
+\end_body
+\end_document
