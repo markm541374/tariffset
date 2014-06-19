@@ -64,18 +64,29 @@
 Using GPGO to find electricity tariffs that induce optimal load profiles
 \end_layout
 
+\begin_layout Section*
+Scenario
+\end_layout
+
 \begin_layout Standard
 The premise is that I am an electricity suplier / distributor on the national
  grid in the near future.
  I have a set of customer that draw power from the grid and pay for this
  power according to a tariff that is linear in power but the gradient may
  vary over time.
- I have hte ability to set this tariff.
+ I have the ability to set this tariff.
  I may also have a set of power sources that I can use to supply power but
  I cannot control these sufficiently to match demand so any imbalance must
  be purchased from or sold to the grid at a poor rate.
- I therefor ich to set the tariff so that demand is matched as closely as
- possible my supply.
+ I therefore wish to set the tariff so that demand is matched as closely
+ as possible my supply.
+ This is possible if a significant proportion of consumer devices have some
+ autonomous capability and are able to alter their actions in response to
+ variation in the daily tariff so that their cost of operation is minimized.
+\end_layout
+
+\begin_layout Section*
+Agent specification
 \end_layout
 
 \begin_layout Standard
@@ -114,7 +125,7 @@ is mostly uncontollable if we are concerned with green power suplies but
 \end_layout
 
 \begin_layout Standard
-Some consumer devices will be able to alter their powe use profile in order
+Some consumer devices will be able to alter their power use profile in order
  to exploit price variations.
  Let 
 \begin_inset Formula $\theta$
@@ -261,18 +272,8 @@ Since
 e optimisation techniques for functions that are expensive to evaluate.
 \end_layout
 
-\begin_layout Standard
-One of the common electricity pricing schemes proposed for the smart grid
- is time of use (TOC) pricing in which prices vary over time but are fixed
- and communicated to consumers in advance.
- The method we propose is to communicate the information for an entire 24
- hour period in advance of the start of that period .
- This allows agent sufficient time to reschedule loads to the optimum within
- operation constraints and simplifies the problem by making it episodic.
-\end_layout
-
-\begin_layout Standard
-Simplest model
+\begin_layout Subsection*
+The simplest agent
 \end_layout
 
 \begin_layout Standard
@@ -322,39 +323,8 @@ This makes the optimisation a 1D search with in a finite region so relatively
  based on ownership and use of various devices.
 \end_layout
 
-\begin_layout Standard
-A common proposal for TOU tariffs is to split the day into 48 half hour
- periods with constant rates during those blocks.
- We wil consider this method, but we will also consider continuously varying
- tariffs defined by finite support vectors such as Gasussian mixture models
- with varying size of support vector.
-\end_layout
-
-\begin_layout Standard
-Existing methods.
- Various methods for real time control have been proposed.
- However these are limited in effectiveness as they can only influence devices
- which have real time flexibility in operation.
- Providing price information ahead of time opens an entire set of devices
- up to influence by price variations.
- Methods to incentivise agents to report back predicted so that purchase
- of power to balance excess in advance can be more accurate.
- I see no obvious reason this cannot also be done in conjunction with time
- of use pricing.
- *cite* rpopose a method for shifting load by time of use pricing, but hteir
- method relys on agents being slow to converge to the optimum in the prevention
- of new peaks forming.
- There seems to be no reason fo an individual agent not to learn faster
- to save more money and if all agents were to do this hte system would not
- function.
-\end_layout
-
-\begin_layout Standard
-More complex model
-\end_layout
-
-\begin_layout Standard
-Upgrades to SSL
+\begin_layout Subsection*
+More complex agents
 \end_layout
 
 \begin_layout Standard
@@ -411,6 +381,123 @@ There is considerable scope for refinement in modelling thermal loads.
  to daily weather conditions.
  considerable work could be done in putting together a good predictive model
  of demand for a given population using surveys and observation of the response.
+\end_layout
+
+\begin_layout Section*
+Tariff specification
+\end_layout
+
+\begin_layout Standard
+One of the common electricity pricing schemes proposed for the smart grid
+ is time of use (TOC) pricing in which prices vary over time but are fixed
+ and communicated to consumers in advance.
+ The method we propose is to communicate the information for an entire 24
+ hour period in advance of the start of that period .
+ This allows agent sufficient time to reschedule loads to the optimum within
+ operation constraints and simplifies the problem by making it episodic.
+\end_layout
+
+\begin_layout Standard
+A common proposal for TOU tariffs is to split the day into 48 half hour
+ periods with constant rates during those blocks.
+ We wil consider this method, but we will also consider continuously varying
+ tariffs defined by finite support vectors such as Gasussian mixture models
+ with varying size of support vector.
+\end_layout
+
+\begin_layout Standard
+Various methods for real time control have been proposed.
+ However these are limited in effectiveness as they can only influence devices
+ which have real time flexibility in operation.
+ Providing price information ahead of time opens an entire set of devices
+ up to influence by price variations.
+ Methods to incentivise agents to report back predicted so that purchase
+ of power to balance excess in advance can be more accurate.
+ I see no obvious reason this cannot also be done in conjunction with time
+ of use pricing.
+ *cite* rpopose a method for shifting load by time of use pricing, but their
+ method relys on agents being slow to converge to the optimum in the prevention
+ of new peaks forming.
+ There seems to be no reason fo an individual agent not to learn faster
+ to save more money and if all agents were to do this the system would not
+ function.
+\end_layout
+
+\begin_layout Section*
+Plan
+\end_layout
+
+\begin_layout Subsection*
+1st step
+\end_layout
+
+\begin_layout Standard
+The tariff will be a GMM with 8 support points (looping around).
+ All ~10^3 agents in the system will have a 1 unit load for 1 hour and must
+ finish by the end of the day.
+ The agent start time is drawn from a distribution with a distinct peak
+ in the middle of the day.
+ The power supplies that I own provide a flat profile equal to the average
+ consumption at a constant cost.
+ Excess supply incurs a small quadraic cost.
+ Excess demand incurs a larger quadratic cost.
+\end_layout
+
+\begin_layout Standard
+This should be very easy to implement, the agents themselves provide an
+ obvious parallelisation.
+ I have python GPGO code already.
+ With no apparent reason to do otherwise I suppose I should use a Matern
+ kernel.
+ The prior is more debatable.
+ If the pdf from which the agent start times are drawn is known I could
+ say my prior belief on the induced load is demand/supply and integrate
+ this under the cost function to find a prior on the output but this would
+ only really be tractable at this level, it probably wouldn't work for more
+ complex agents.
+\end_layout
+
+\begin_layout Standard
+Once this seems to be working: variation of number of support points.
+ is there a good vaue to use? Switch to constant block tariff, how does
+ it compare.
+ How does the variance int eh result correspond to the number of agents?
+ What should I be using as a performance metric, ratio of cost to flat tariff?
+ Could also look at max/min ratio reduction rather than overall cost if
+ the optimization is changed to have this as its objective.
+ 
+\end_layout
+
+\begin_layout Subsection*
+Moving further
+\end_layout
+
+\begin_layout Standard
+Realistic power profiles and start times.
+ Make a thermal load agent and test that under similar simple circumstances.
+ Realistic thermal load parameters.
+ Match laod to a given supply profile rather than just flattening (tidal/wind/wa
+ve)
+\end_layout
+
+\begin_layout Subsection*
+Even further
+\end_layout
+
+\begin_layout Standard
+Combine consumer loads, static loads and thermal loads in realistic proportions
+ to make a model of a real customer set.
+\end_layout
+
+\begin_layout Standard
+Moving focus away from the tariff setting somewhat: build models of populations
+ with parameters that are affected by location/weather/timeofyear.
+ Try to do inference on the distibution of agent parameters based on the
+ response to a tariff.
+ Example: combining response with weather maps over several days I might
+ be able to work out the geographical distribution of heating/cooling system
+ powers and setpoints and so have a better model for demand prediction under
+ weather variations in future.
 \end_layout
 
 \end_body
