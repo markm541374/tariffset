@@ -69,7 +69,7 @@ Scenario
 \end_layout
 
 \begin_layout Standard
-The premise is that I am an electricity suplier / distributor on the national
+The premise is that I am an electricity supplier / distributor on the national
  grid in the near future.
  I have a set of customer that draw power from the grid and pay for this
  power according to a tariff that is linear in power but the gradient may
@@ -92,22 +92,22 @@ Agent specification
 \begin_layout Standard
 Each customer has a number of devices which consume power.
  Some (and at present almost all) of these devices do not have any autonomy.
- They draw power acording to their use pattern by the consumer.
+ They draw power according to their use pattern by the consumer.
  This power use profile is random but very well studied, particularly the
  sum over all customers.
- Let each consumer be 
+ Let each consumer be
 \begin_inset Formula $c\in C$
 \end_inset
 
- and their power use be 
+ and their power use be
 \begin_inset Formula $p_{c}\left(t\right)\sim randomprocess$
 \end_inset
 
 .
  The power used by all customers is therefore
-\begin_inset Formula 
+\begin_inset Formula
 \begin{equation}
-P_{c}\left(t\right)=\sum_{c\in C}p_{c}\left(t\right)
+P_{c}\left(t\right)=\sum_{c\in C}p_{c}\left(t\right).
 \end{equation}
 
 \end_inset
@@ -116,26 +116,26 @@ P_{c}\left(t\right)=\sum_{c\in C}p_{c}\left(t\right)
 \end_layout
 
 \begin_layout Standard
-The power that can be supplied at a low cost 
+The power that can be supplied at a low cost
 \begin_inset Formula $P_{G}\left(t\right)$
 \end_inset
 
-is mostly uncontollable if we are concerned with green power suplies but
+is mostly uncontrollable if we are concerned with green power supplies but
  can be reasonably well predicted in advance.
 \end_layout
 
 \begin_layout Standard
 Some consumer devices will be able to alter their power use profile in order
  to exploit price variations.
- Let 
+ Let
 \begin_inset Formula $\theta$
 \end_inset
 
  be a parameter vector with sufficient information to derive the instantaneous
  tariff at any time according to
-\begin_inset Formula 
+\begin_inset Formula
 \begin{equation}
-\tau=\tau\left(t,\theta\right)
+\tau=\tau\left(t,\theta\right).
 \end{equation}
 
 \end_inset
@@ -144,50 +144,50 @@ Some consumer devices will be able to alter their power use profile in order
 \end_layout
 
 \begin_layout Standard
-where 
+where
 \begin_inset Formula $f$
 \end_inset
 
- is some know function.
- Let each device with the ability to independantly alter their profile in
- response to 
+ is some known function.
+ Let each device with the ability to independently alter their profile in
+ response to
 \begin_inset Formula $\theta$
 \end_inset
 
- be defined as an agent 
+ be defined as an agent
 \begin_inset Formula $a\in A$
 \end_inset
 
 .
- Each agent has private information 
+ Each agent has private information
 \begin_inset Formula $\phi_{a}\in\Phi$
 \end_inset
 
  set by the user which constrains the agent operation to behaviors that
  allow it to fulfill its function.
- It must chose a schedule 
+ It must choose a schedule
 \begin_inset Formula $s_{a}\in S_{a}$
 \end_inset
 
-from the set of all schedules that satisfy its constraints.
- Not all choices of 
+ from the set of all schedules that satisfy its constraints.
+ Not all choices of
 \begin_inset Formula $s_{a}$
 \end_inset
 
- are equally good to the user so the agent also has a utility function 
-\begin_inset Formula $u_{a}^{s}:S,\Phi\rightarrow\mathbb{R}$
+ are equally good to the user so the agent also has a utility function
+\begin_inset Formula $u_{a}:S,\Phi\rightarrow\mathbb{R}$
 \end_inset
 
 which allows it to determine the value to the user of choosing a particular
  action.
- If the power use given by is 
+ If the power use given by is
 \begin_inset Formula $p_{a}\left(s,t\right)$
 \end_inset
 
  then the total cost of electricity so that schedule is
-\begin_inset Formula 
+\begin_inset Formula
 \begin{equation}
-u_{a}^{e}=\intop_{t}p\left(s_{a},t\right)\tau\left(\theta,t\right)\mathrm{d}t
+u_{a}^{e}(s)=\intop_{t}p\left(s,t\right)\tau\left(\theta,t\right)\mathrm{d}t.
 \end{equation}
 
 \end_inset
@@ -197,9 +197,9 @@ u_{a}^{e}=\intop_{t}p\left(s_{a},t\right)\tau\left(\theta,t\right)\mathrm{d}t
 
 \begin_layout Standard
 The schedule chose by an intelligent agent will therefore be
-\begin_inset Formula 
+\begin_inset Formula
 \begin{equation}
-s_{a}=\mathrm{arg\, min}_{s\in S_{a}}u_{a}^{e}+u_{a}^{s}
+s_{a}=\mathrm{arg\, min}_{s\in S_{a}}u_{a}^{e}(s)+u_{a}(s).
 \end{equation}
 
 \end_inset
@@ -209,9 +209,9 @@ s_{a}=\mathrm{arg\, min}_{s\in S_{a}}u_{a}^{e}+u_{a}^{s}
 
 \begin_layout Standard
 The power used by all agents over time is therefore
-\begin_inset Formula 
+\begin_inset Formula
 \begin{equation}
-P_{a}\left(t\right)=\sum_{a\in A}p\left(s_{a},t\right)
+P_{a}\left(t\right)=\sum_{a\in A}p\left(s_{a},t\right).
 \end{equation}
 
 \end_inset
@@ -220,11 +220,11 @@ P_{a}\left(t\right)=\sum_{a\in A}p\left(s_{a},t\right)
 \end_layout
 
 \begin_layout Standard
-The power imbalance that must be met bu sale/purchase of excess is given
+The power imbalance that must be met by sale/purchase of excess is given
  by
-\begin_inset Formula 
+\begin_inset Formula
 \begin{equation}
-\Delta P\left(t\right)=P_{a}\left(t\right)+P_{c}\left(t\right)-P_{G}\left(t\right)
+\Delta P\left(t\right)=P_{a}\left(t\right)+P_{c}\left(t\right)-P_{G}\left(t\right).
 \end{equation}
 
 \end_inset
@@ -235,7 +235,7 @@ The power imbalance that must be met bu sale/purchase of excess is given
 \begin_layout Standard
 We wish to minimise this under some cost mapping i.e.
  integral of the 2-norm
-\begin_inset Formula 
+\begin_inset Formula
 \begin{equation}
 y=G\left(\theta\right)=\intop_{t}\left\Vert \triangle P\left(t\right)\right\Vert _{2}\mathrm{d}t
 \end{equation}
@@ -246,7 +246,7 @@ y=G\left(\theta\right)=\intop_{t}\left\Vert \triangle P\left(t\right)\right\Vert
 \end_layout
 
 \begin_layout Standard
-which is a multiple input single output function 
+which is a multiple input single output function
 \begin_inset Formula $G:\mathbb{R}^{N}\rightarrow\mathbb{R}$
 \end_inset
 
@@ -254,22 +254,22 @@ which is a multiple input single output function
 \end_layout
 
 \begin_layout Standard
-Since 
+Since
 \begin_inset Formula $\phi,u$
 \end_inset
 
  may be any arbitrary values and arbitrarily complex functions for each
- agent we must treat 
+ agent we must treat
 \begin_inset Formula $G$
 \end_inset
 
- as a black box process which may be multimodal.
- We obviously cannot experiment on a real electricity network with a realistic
- number of customers so we must use simulations.
- Since hte total power use is the sum of a large number of individual profiles
- each of which is determinied by an agent running an optimisation routine
- we must treat this black box function as expensive and therefore use appropriat
-e optimisation techniques for functions that are expensive to evaluate.
+ as a black box process which may be multimodal. We obviously cannot experiment
+ on a real electricity network with a realistic number of customers so we must
+ use simulations. Since the total power use is the sum of a large number of
+ individual profiles each of which is determined by an agent running an
+ optimisation routine we must treat this black box function as expensive and
+ therefore use appropriate optimisation techniques for functions that are
+ expensive to evaluate.
 \end_layout
 
 \begin_layout Subsection*
@@ -280,29 +280,29 @@ The simplest agent
 The most simple agent is a shiftable static load.
  Washers and dryers are an example of this category.
  They will consume power in a fixed profile from the start time until the
- ned of their cycle of lenght 
+ end of their cycle of length
 \begin_inset Formula $T$
 \end_inset
 
 .
  The only scheduling variable to be changed is the start time and the only
- constraint is the latest permissible finish time 
+ constraint is the latest permissible finish time
 \begin_inset Formula $t_{f}$
 \end_inset
 
 .
- The agent is considered to be initialised by the user at time 
+ The agent is considered to be initialised by the user at time
 \begin_inset Formula $t_{0}$
 \end_inset
 
 for which the utility of starting is zero and decreases linearly according
- to a gradient parameter 
+ to a gradient parameter
 \begin_inset Formula $\alpha$
 \end_inset
 
 .
  The utility of scheduling is therefore
-\begin_inset Formula 
+\begin_inset Formula
 \begin{equation}
 u_{a}(s=t_{s})=-\alpha(t_{s}-t_{0})\; S=[t_{0},t_{f}-T)
 \end{equation}
@@ -315,11 +315,11 @@ u_{a}(s=t_{s})=-\alpha(t_{s}-t_{0})\; S=[t_{0},t_{f}-T)
 \begin_layout Standard
 This makes the optimisation a 1D search with in a finite region so relatively
  simple to implement.
- The values of 
+ The values of
 \begin_inset Formula $\alpha,t_{0},t_{f}$
 \end_inset
 
- and the load profile and duration should be drawn from some distrbution
+ and the load profile and duration should be drawn from some distribution
  based on ownership and use of various devices.
 \end_layout
 
@@ -330,7 +330,7 @@ More complex agents
 \begin_layout Standard
 It may be useful to implement various load profiles and nonlinear utility
  functions.
- It is easy to imagine a device being set to 
+ It is easy to imagine a device being set to
 \begin_inset Quotes eld
 \end_inset
 
@@ -347,7 +347,7 @@ Thermal loads
 
 \begin_layout Standard
 These are much more complex.
- The agents require to maintaing a temperature 
+ The agents require to maintaing a temperature
 \begin_inset Formula $T$
 \end_inset
 
@@ -355,20 +355,20 @@ These are much more complex.
  with a utility cost for deviation.
  This must be maintained despite thermal loss to the environment using a
  heater/heatpump.
- The simplest reasonable model is to consider a fixed thermal mass 
+ The simplest reasonable model is to consider a fixed thermal mass
 \begin_inset Formula $cm$
 \end_inset
 
- with a binary power input 
+ with a binary power input
 \begin_inset Formula $k_{1}\delta\left(\mathrm{on}\right)$
 \end_inset
 
-and loss to the environment 
+and loss to the environment
 \begin_inset Formula $k_{2}(T-T_{ext})$
 \end_inset
 
 .
- A suggested utility for deviation from the target is asymettric quadratic
+ A suggested utility for deviation from the target is asymmetric quadratic
  cost.
  For a reasonably simple case such as this the optimal control input under
  a given tariff can be found using quadratic solvers.
@@ -392,7 +392,7 @@ One of the common electricity pricing schemes proposed for the smart grid
  is time of use (TOC) pricing in which prices vary over time but are fixed
  and communicated to consumers in advance.
  The method we propose is to communicate the information for an entire 24
- hour period in advance of the start of that period .
+ hour period in advance of the start of that period.
  This allows agent sufficient time to reschedule loads to the optimum within
  operation constraints and simplifies the problem by making it episodic.
 \end_layout
@@ -400,9 +400,9 @@ One of the common electricity pricing schemes proposed for the smart grid
 \begin_layout Standard
 A common proposal for TOU tariffs is to split the day into 48 half hour
  periods with constant rates during those blocks.
- We wil consider this method, but we will also consider continuously varying
- tariffs defined by finite support vectors such as Gasussian mixture models
- with varying size of support vector.
+ We will consider this method, but we will also consider continuously varying
+ tariffs defined by finite Gaussian mixture models
+ with varying numbers of basis functions.
 \end_layout
 
 \begin_layout Standard
@@ -415,10 +415,10 @@ Various methods for real time control have been proposed.
  of power to balance excess in advance can be more accurate.
  I see no obvious reason this cannot also be done in conjunction with time
  of use pricing.
- *cite* rpopose a method for shifting load by time of use pricing, but their
- method relys on agents being slow to converge to the optimum in the prevention
+ *cite* propose a method for shifting load by time of use pricing, but their
+ method relies on agents being slow to converge to the optimum in the prevention
  of new peaks forming.
- There seems to be no reason fo an individual agent not to learn faster
+ There seems to be no reason for an individual agent not to learn faster
  to save more money and if all agents were to do this the system would not
  function.
 \end_layout
@@ -439,7 +439,7 @@ The tariff will be a GMM with 8 support points (looping around).
  in the middle of the day.
  The power supplies that I own provide a flat profile equal to the average
  consumption at a constant cost.
- Excess supply incurs a small quadraic cost.
+ Excess supply incurs a small quadratic cost.
  Excess demand incurs a larger quadratic cost.
 \end_layout
 
@@ -459,13 +459,13 @@ This should be very easy to implement, the agents themselves provide an
 
 \begin_layout Standard
 Once this seems to be working: variation of number of support points.
- is there a good vaue to use? Switch to constant block tariff, how does
+ is there a good value to use? Switch to constant block tariff, how does
  it compare.
- How does the variance int eh result correspond to the number of agents?
+ How does the variance in the result correspond to the number of agents?
  What should I be using as a performance metric, ratio of cost to flat tariff?
  Could also look at max/min ratio reduction rather than overall cost if
  the optimization is changed to have this as its objective.
- 
+
 \end_layout
 
 \begin_layout Subsection*
@@ -492,7 +492,7 @@ Combine consumer loads, static loads and thermal loads in realistic proportions
 \begin_layout Standard
 Moving focus away from the tariff setting somewhat: build models of populations
  with parameters that are affected by location/weather/timeofyear.
- Try to do inference on the distibution of agent parameters based on the
+ Try to do inference on the distribution of agent parameters based on the
  response to a tariff.
  Example: combining response with weather maps over several days I might
  be able to work out the geographical distribution of heating/cooling system
