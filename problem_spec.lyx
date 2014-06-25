@@ -476,7 +476,7 @@ Moving further
 Realistic power profiles and start times.
  Make a thermal load agent and test that under similar simple circumstances.
  Realistic thermal load parameters.
- Match laod to a given supply profile rather than just flattening (tidal/wind/wa
+ Match load to a given supply profile rather than just flattening (tidal/wind/wa
 ve)
 \end_layout
 
