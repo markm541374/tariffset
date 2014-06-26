@@ -22,28 +22,19 @@ in the near future. I have a set of customer that draw power from the grid and
 pay for this power according to a tariff that is linear in power but the gradient
 may vary over time. I have the ability to set this tariff. I may also have a
 set of power sources that I can use to supply power but I cannot control these
-sufficiently to match demand so any imbalance must be purchased from or sold
-to the grid at a poor rate. I therefore wish to set the tariff so that demand
-is matched as closely as possible my supply. This is possible if a significant
+sufficiently to match demand so any imbalance must be purchased from or sold to other suppliers.I therefore wish to set the tariff so that demand is matched as closely as possible to my supply. This is possible if a significant
 proportion of consumer devices have some autonomous capability and are able
 to alter their actions in response to variation in the daily tariff so that their cost
 of operation is minimized.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Agent specification}
-Each customer has a number of devices which consume power. Some (and at
-present almost all) of these devices do not have any autonomy. They draw
-power according to their use pattern by the consumer. This power use profile
-is random but very well studied, particularly the sum over all customers. Let
-each consumer be $c \in C$ and their power use be $pc (t) \sim randomprocess$. The
-power used by all customers is therefore
+Each customer has a number of devices which consume power. The load profile induced over time is well studied and predictable for the sum over a large number of consumers. Some recent research has been done into disaggregating power usage at the level of a single home into individual devices \cite{kolter2011redd} \cite{anderson2012blued}. \cite{kolter2011redd} Suggests modeling the system as a factorial hidden Markov model in which each device is a single hidden Markov model. At present almost all devices do not take account of electricity pricing and simply function directly when switched on by the owner, however this is not true under a smart-grid scenario. We classify all power consuming devices $d \in D$ which produce a load profile $p_{d}(t)$ as direct-use devices $d \in U$ if they are not influenced by price variations (lighting, cooking, entertainment systems) or intelligent agents $d \in A$ if they have access to the electricity price and are equipped to alter their behavior accordingly (heating, cooling, washers, dryers) such that $A$ and $U$ are disjoint and their union is $D$. The power demand that must be met is therefore the sum of power used by direct-use devices and intelligent devices
 \begin{equation}
-P_{c} (t) = \sum_{c \in C} p_{c} (t)
+P_{u} (t) = \sum_{d \in U} p_{d} (t)
 \end{equation}
 
-The power that can be supplied at a low cost $P_{G} (t)$is mostly uncontrollable if
-we are concerned with green power supplies but can be reasonably well predicted
-in advance.
+
 Some consumer devices will be able to alter their power use profile in order to
 exploit price variations. Let $\theta$ be a parameter vector with sufficient information
 to derive the instantaneous tariff at any time according to
@@ -70,7 +61,7 @@ The power used by all agents over time is therefore
 P_{a}(t) = \sum_{a \in A} p (s_{a} , t)
 \end{equation}
 
-The power imbalance that must be met by sale/purchase of excess is given
+The power demand
 by
 \begin{equation}
 \Delta P (t) = P_{a} (t) + P_{c} (t) - P_{G} (t)
@@ -195,4 +186,6 @@ I might be able to work out the geographical distribution of heating/cooling
 system powers and setpoints and so have a better model for demand prediction
 under weather variations in future.
 
+\bibliography{problem_spec.bib}{}
+\bibliographystyle{plain}
 \end{document}
