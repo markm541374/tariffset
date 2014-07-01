@@ -1,0 +1,504 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Using GPGO to find electricity tariffs that induce optimal load profiles
+\end_layout
+
+\begin_layout Section*
+Scenario
+\end_layout
+
+\begin_layout Standard
+The premise is that I am an electricity supplier / distributor on the national
+ grid in the near future.
+ I have a set of customer that draw power from the grid and pay for this
+ power according to a tariff that is linear in power but the gradient may
+ vary over time.
+ I have the ability to set this tariff.
+ I may also have a set of power sources that I can use to supply power but
+ I cannot control these sufficiently to match demand so any imbalance must
+ be purchased from or sold to the grid at a poor rate.
+ I therefore wish to set the tariff so that demand is matched as closely
+ as possible my supply.
+ This is possible if a significant proportion of consumer devices have some
+ autonomous capability and are able to alter their actions in response to
+ variation in the daily tariff so that their cost of operation is minimized.
+\end_layout
+
+\begin_layout Section*
+Agent specification
+\end_layout
+
+\begin_layout Standard
+Each customer has a number of devices which consume power.
+ Some (and at present almost all) of these devices do not have any autonomy.
+ They draw power according to their use pattern by the consumer.
+ This power use profile is random but very well studied, particularly the
+ sum over all customers.
+ Let each consumer be
+\begin_inset Formula $c\in C$
+\end_inset
+
+ and their power use be
+\begin_inset Formula $p_{c}\left(t\right)\sim randomprocess$
+\end_inset
+
+.
+ The power used by all customers is therefore
+\begin_inset Formula
+\begin{equation}
+P_{c}\left(t\right)=\sum_{c\in C}p_{c}\left(t\right).
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The power that can be supplied at a low cost
+\begin_inset Formula $P_{G}\left(t\right)$
+\end_inset
+
+is mostly uncontrollable if we are concerned with green power supplies but
+ can be reasonably well predicted in advance.
+\end_layout
+
+\begin_layout Standard
+Some consumer devices will be able to alter their power use profile in order
+ to exploit price variations.
+ Let
+\begin_inset Formula $\theta$
+\end_inset
+
+ be a parameter vector with sufficient information to derive the instantaneous
+ tariff at any time according to
+\begin_inset Formula
+\begin{equation}
+\tau=\tau\left(t,\theta\right).
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where
+\begin_inset Formula $f$
+\end_inset
+
+ is some known function.
+ Let each device with the ability to independently alter their profile in
+ response to
+\begin_inset Formula $\theta$
+\end_inset
+
+ be defined as an agent
+\begin_inset Formula $a\in A$
+\end_inset
+
+.
+ Each agent has private information
+\begin_inset Formula $\phi_{a}\in\Phi$
+\end_inset
+
+ set by the user which constrains the agent operation to behaviors that
+ allow it to fulfill its function.
+ It must choose a schedule
+\begin_inset Formula $s_{a}\in S_{a}$
+\end_inset
+
+ from the set of all schedules that satisfy its constraints.
+ Not all choices of
+\begin_inset Formula $s_{a}$
+\end_inset
+
+ are equally good to the user so the agent also has a utility function
+\begin_inset Formula $u_{a}:S,\Phi\rightarrow\mathbb{R}$
+\end_inset
+
+which allows it to determine the value to the user of choosing a particular
+ action.
+ If the power use given by is
+\begin_inset Formula $p_{a}\left(s,t\right)$
+\end_inset
+
+ then the total cost of electricity so that schedule is
+\begin_inset Formula
+\begin{equation}
+u_{a}^{e}(s)=\intop_{t}p\left(s,t\right)\tau\left(\theta,t\right)\mathrm{d}t.
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The schedule chose by an intelligent agent will therefore be
+\begin_inset Formula
+\begin{equation}
+s_{a}=\mathrm{arg\, min}_{s\in S_{a}}u_{a}^{e}(s)+u_{a}(s).
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The power used by all agents over time is therefore
+\begin_inset Formula
+\begin{equation}
+P_{a}\left(t\right)=\sum_{a\in A}p\left(s_{a},t\right).
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The power imbalance that must be met by sale/purchase of excess is given
+ by
+\begin_inset Formula
+\begin{equation}
+\Delta P\left(t\right)=P_{a}\left(t\right)+P_{c}\left(t\right)-P_{G}\left(t\right).
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We wish to minimise this under some cost mapping i.e.
+ integral of the 2-norm
+\begin_inset Formula
+\begin{equation}
+y=G\left(\theta\right)=\intop_{t}\left\Vert \triangle P\left(t\right)\right\Vert _{2}\mathrm{d}t
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which is a multiple input single output function
+\begin_inset Formula $G:\mathbb{R}^{N}\rightarrow\mathbb{R}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Since
+\begin_inset Formula $\phi,u$
+\end_inset
+
+ may be any arbitrary values and arbitrarily complex functions for each
+ agent we must treat
+\begin_inset Formula $G$
+\end_inset
+
+ as a black box process which may be multimodal. We obviously cannot experiment
+ on a real electricity network with a realistic number of customers so we must
+ use simulations. Since the total power use is the sum of a large number of
+ individual profiles each of which is determined by an agent running an
+ optimisation routine we must treat this black box function as expensive and
+ therefore use appropriate optimisation techniques for functions that are
+ expensive to evaluate.
+\end_layout
+
+\begin_layout Subsection*
+The simplest agent
+\end_layout
+
+\begin_layout Standard
+The most simple agent is a shiftable static load.
+ Washers and dryers are an example of this category.
+ They will consume power in a fixed profile from the start time until the
+ end of their cycle of length
+\begin_inset Formula $T$
+\end_inset
+
+.
+ The only scheduling variable to be changed is the start time and the only
+ constraint is the latest permissible finish time
+\begin_inset Formula $t_{f}$
+\end_inset
+
+.
+ The agent is considered to be initialised by the user at time
+\begin_inset Formula $t_{0}$
+\end_inset
+
+for which the utility of starting is zero and decreases linearly according
+ to a gradient parameter
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+ The utility of scheduling is therefore
+\begin_inset Formula
+\begin{equation}
+u_{a}(s=t_{s})=-\alpha(t_{s}-t_{0})\; S=[t_{0},t_{f}-T)
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This makes the optimisation a 1D search with in a finite region so relatively
+ simple to implement.
+ The values of
+\begin_inset Formula $\alpha,t_{0},t_{f}$
+\end_inset
+
+ and the load profile and duration should be drawn from some distribution
+ based on ownership and use of various devices.
+\end_layout
+
+\begin_layout Subsection*
+More complex agents
+\end_layout
+
+\begin_layout Standard
+It may be useful to implement various load profiles and nonlinear utility
+ functions.
+ It is easy to imagine a device being set to
+\begin_inset Quotes eld
+\end_inset
+
+finish in time for x but do not run between y and z unless w
+\begin_inset Quotes erd
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thermal loads
+\end_layout
+
+\begin_layout Standard
+These are much more complex.
+ The agents require to maintaing a temperature
+\begin_inset Formula $T$
+\end_inset
+
+ as close as possible to some target for all the time they are operating
+ with a utility cost for deviation.
+ This must be maintained despite thermal loss to the environment using a
+ heater/heatpump.
+ The simplest reasonable model is to consider a fixed thermal mass
+\begin_inset Formula $cm$
+\end_inset
+
+ with a binary power input
+\begin_inset Formula $k_{1}\delta\left(\mathrm{on}\right)$
+\end_inset
+
+and loss to the environment
+\begin_inset Formula $k_{2}(T-T_{ext})$
+\end_inset
+
+.
+ A suggested utility for deviation from the target is asymmetric quadratic
+ cost.
+ For a reasonably simple case such as this the optimal control input under
+ a given tariff can be found using quadratic solvers.
+\end_layout
+
+\begin_layout Standard
+There is considerable scope for refinement in modelling thermal loads.
+ The heat pump power, thermal mass and insulation rating can all be investigated
+, the external temperature is variable in geography and strongly linked
+ to daily weather conditions.
+ considerable work could be done in putting together a good predictive model
+ of demand for a given population using surveys and observation of the response.
+\end_layout
+
+\begin_layout Section*
+Tariff specification
+\end_layout
+
+\begin_layout Standard
+One of the common electricity pricing schemes proposed for the smart grid
+ is time of use (TOC) pricing in which prices vary over time but are fixed
+ and communicated to consumers in advance.
+ The method we propose is to communicate the information for an entire 24
+ hour period in advance of the start of that period.
+ This allows agent sufficient time to reschedule loads to the optimum within
+ operation constraints and simplifies the problem by making it episodic.
+\end_layout
+
+\begin_layout Standard
+A common proposal for TOU tariffs is to split the day into 48 half hour
+ periods with constant rates during those blocks.
+ We will consider this method, but we will also consider continuously varying
+ tariffs defined by finite Gaussian mixture models
+ with varying numbers of basis functions.
+\end_layout
+
+\begin_layout Standard
+Various methods for real time control have been proposed.
+ However these are limited in effectiveness as they can only influence devices
+ which have real time flexibility in operation.
+ Providing price information ahead of time opens an entire set of devices
+ up to influence by price variations.
+ Methods to incentivise agents to report back predicted so that purchase
+ of power to balance excess in advance can be more accurate.
+ I see no obvious reason this cannot also be done in conjunction with time
+ of use pricing.
+ *cite* propose a method for shifting load by time of use pricing, but their
+ method relies on agents being slow to converge to the optimum in the prevention
+ of new peaks forming.
+ There seems to be no reason for an individual agent not to learn faster
+ to save more money and if all agents were to do this the system would not
+ function.
+\end_layout
+
+\begin_layout Section*
+Plan
+\end_layout
+
+\begin_layout Subsection*
+1st step
+\end_layout
+
+\begin_layout Standard
+The tariff will be a GMM with 8 support points (looping around).
+ All ~10^3 agents in the system will have a 1 unit load for 1 hour and must
+ finish by the end of the day.
+ The agent start time is drawn from a distribution with a distinct peak
+ in the middle of the day.
+ The power supplies that I own provide a flat profile equal to the average
+ consumption at a constant cost.
+ Excess supply incurs a small quadratic cost.
+ Excess demand incurs a larger quadratic cost.
+\end_layout
+
+\begin_layout Standard
+This should be very easy to implement, the agents themselves provide an
+ obvious parallelisation.
+ I have python GPGO code already.
+ With no apparent reason to do otherwise I suppose I should use a Matern
+ kernel.
+ The prior is more debatable.
+ If the pdf from which the agent start times are drawn is known I could
+ say my prior belief on the induced load is demand/supply and integrate
+ this under the cost function to find a prior on the output but this would
+ only really be tractable at this level, it probably wouldn't work for more
+ complex agents.
+\end_layout
+
+\begin_layout Standard
+Once this seems to be working: variation of number of support points.
+ is there a good value to use? Switch to constant block tariff, how does
+ it compare.
+ How does the variance in the result correspond to the number of agents?
+ What should I be using as a performance metric, ratio of cost to flat tariff?
+ Could also look at max/min ratio reduction rather than overall cost if
+ the optimization is changed to have this as its objective.
+
+\end_layout
+
+\begin_layout Subsection*
+Moving further
+\end_layout
+
+\begin_layout Standard
+Realistic power profiles and start times.
+ Make a thermal load agent and test that under similar simple circumstances.
+ Realistic thermal load parameters.
+ Match load to a given supply profile rather than just flattening (tidal/wind/wa
+ve)
+\end_layout
+
+\begin_layout Subsection*
+Even further
+\end_layout
+
+\begin_layout Standard
+Combine consumer loads, static loads and thermal loads in realistic proportions
+ to make a model of a real customer set.
+\end_layout
+
+\begin_layout Standard
+Moving focus away from the tariff setting somewhat: build models of populations
+ with parameters that are affected by location/weather/timeofyear.
+ Try to do inference on the distribution of agent parameters based on the
+ response to a tariff.
+ Example: combining response with weather maps over several days I might
+ be able to work out the geographical distribution of heating/cooling system
+ powers and setpoints and so have a better model for demand prediction under
+ weather variations in future.
+\end_layout
+
+\end_body
+\end_document
