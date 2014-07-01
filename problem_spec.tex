@@ -29,7 +29,7 @@ of operation is minimized.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Agent specification}
-Each customer has a number of devices which consume power. The load profile induced over time is well studied and predictable for the sum over a large number of consumers. Some recent research has been done into disaggregating power usage at the level of a single home into individual devices \cite{kolter2011redd} \cite{anderson2012blued}. \cite{kolter2011redd} Suggests modeling the system as a factorial hidden Markov model in which each device is a single hidden Markov model. At present almost all devices do not take account of electricity pricing and simply function directly when switched on by the owner, however this is not true under a smart-grid scenario. We classify all power consuming devices $d \in D$ which produce a load profile $p_{d}(t)$ as direct-use devices $d \in U$ if they are not influenced by price variations (lighting, cooking, entertainment systems) or intelligent agents $d \in A$ if they have access to the electricity price and are equipped to alter their behavior accordingly (heating, cooling, washers, dryers) such that $A$ and $U$ are disjoint and their union is $D$. The power demand that must be met is therefore the sum of power used by direct-use devices and intelligent devices
+Each customer has a number of devices which consume power. The load profile induced over time is well studied and predictable for the sum over a large number of consumers. Some recent research has been done into disaggregating power usage at the level of a single home into individual devices \cite{kolter2011redd} \cite{anderson2012blued}. \cite{kolter2011redd} Suggests modeling the system as a factorial hidden Markov model in which each device is a single hidden Markov model. At present almost all devices do not take account of electricity pricing and simply function directly when switched on by the owner, however this is not true under a smart-grid scenario. We classify all power consuming devices $d \in D$ which produce a load profile $p_{d}(t)$ as direct-use devices $d \in U$ if they are not influenced by price variations (lighting, cooking, entertainment systems) or intelligent agents $d \in A$ if they have access to the electricity price and are equipped to alter their behaviour accordingly (heating, cooling, washers, dryers) such that $A$ and $U$ are disjoint and their union is $D$. The power demand that must be met is therefore the sum of power used by direct-use devices and intelligent devices
 \begin{equation}
 P_{u} (t) = \sum_{d \in U} p_{d} (t)
 \end{equation}
@@ -43,10 +43,10 @@ to derive the instantaneous tariff at any time according to
 \end{equation}
 where $f$ is some know function. Let each device with the ability to independently alter their profile in response to $\theta$ be defined as an agent $a \in A$.
 Each agent has private information $\phi_{a} \in \Phi $ set by the user which constrains the
-agent operation to behaviors that allow it to fulfill its function. It must chose a
+agent operation to behaviours that allow it to fulfil its function. It must chose a
 schedule $s_{a} \in S_{a}$ from the set of all schedules that satisfy its constraints. Not all
 choices of $s_{a}$ are equally good to the user so the agent also has a utility function
-$u_{s} : S, \Phi \rightarrow \mathbb{R} $ which allows it to determine the value to the user of choosing a
+$u_{s} : S, \Phi \rightarrow v\qquad v \in \mathbb{R} $ which allows it to determine the value to the user of choosing a
 particular action. If the power use induced under $s$ is given by $ p_{a} (s, t) $then the total cost of
 electricity under that schedule is
 \begin{equation}
@@ -83,7 +83,7 @@ that are expensive to evaluate.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{The simplest agent}
-The most simple agent is a shiftable static load. Washers and dryers are an
+The most simple agent is a shift-able static load. Washers and dryers are an
 example of this category. They will consume power in a fixed profile from the
 start time until the end of their cycle of length T . The only scheduling variable
 to be changed is the start time and the only constraint is the latest permissible
@@ -101,7 +101,7 @@ devices.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
 \section{More complex agents}
-It may be useful to implement various load profiles and nonlinear utility functions. It is easy to imagine a device being set to “finish in time for $x$ but do not
+It may be useful to implement various load profiles and non-linear utility functions. It is easy to imagine a device being set to “finish in time for $x$ but do not
 run between $y$ and $z$ unless $w$”
 Thermal loads
 These are much more complex. The agents require to maintaining a temperature T as close as possible to some target for all the time they are operating
@@ -112,7 +112,7 @@ loss to the environment $k_{2} (T - T_{ext} )$. A suggested utility for deviatio
 the target is asymmetric quadratic cost. For a reasonably simple case such as
 this the optimal control input under a given tariff can be found using quadratic
 solvers.
-There is considerable scope for refinement in modeling thermal loads. The
+There is considerable scope for refinement in modelling thermal loads. The
 heat pump power, thermal mass and insulation rating can all be investigated,
 the external temperature is variable in geography and strongly linked to daily
 weather conditions. considerable work could be done in putting together a good
@@ -138,7 +138,7 @@ time flexibility in operation. Providing price information ahead of time opens a
 entire set of devices up to influence by price variations. Methods to incentivize
 agents to report back predicted so that purchase of power to balance excess in
 advance can be more accurate. I see no obvious reason this cannot also be done
-in conjunction with time of use pricing. *cite* propose a method for shifting
+in conjunction with time of use pricing. \cite{ramchurn2011agent} propose a method for shifting
 load by time of use pricing, but their method relies on agents being slow to
 converge to the optimum in the prevention of new peaks forming. There seems
 to be no reason for an individual agent not to learn faster to save more money
@@ -157,34 +157,26 @@ flat profile equal to the average consumption at a constant cost. Excess supply
 incurs a small quadratic cost. Excess demand incurs a larger quadratic cost.
 This should be very easy to implement, the agents themselves provide an
 obvious parallelization. I have python GPGO code already. With no apparent
-reason to do otherwise I suppose I should use a Matern kernel. The prior is
-more debatable. If the pdf from which the agent start times are drawn is known
+reason to do otherwise I suppose I should use a Matern $ \frac{3}{2} $ kernel initially as it accommodates multiple lengthscales seems to be commonly used in literature. Considering what kernel should actually be used is probably something for later steps, I think there will be discontinuities as if there are two local minima the transition from one being deeper to the other will cause a number of agents to make a step change in their scheduling pattern. The prior is also debatable. If the pdf from which the agent start times are drawn is known
 I could say my prior belief on the induced load is demand/supply and integrate
 this under the cost function to find a prior on the output but this would only
 really be tractable at this level, it probably wouldn't work for more complex
 agents.
 Once this seems to be working: variation of number of support points. is
 there a good value to use? Switch to constant block tariff, how does it compare.
-How does the variance in the result correspond to the number of agents? What
-should I be using as a performance metric, ratio of cost to flat tariff? Could also
-look at max/min ratio reduction rather than overall cost if the optimization is
-changed to have this as its objective.
+How does the variance in the result correspond to the number of agents? I think this will have similar characteristics to choosing the number of degrees of freedom in a model. Performance will improve sharply at first as sufficient DOF are obtained to move the bulk of agents away from peaks and towards troughs, beyond a certain value where the profile is broadly flat performance will be only small refinements and will improve much more gradually. It may also be capped by the number of agents, I think with an infinite number of agents and infinite degrees of freedom the profile could be flattened exactly, but for a finite number this will not be the case and there will be a point where it is the individual agents in the test set that are being optimised over rather than the agent distribution. Using multiple test sets and updating the GP using a mean and variance rather than an exact value should help with this.
+What should I be using as a performance metric, ratio of cost to flat tariff? Could also
+look at max/min ratio reduction or the shape of the load-duration curve rather than overall cost if the optimization is changed to have this as its objective. This somewhat depends on the exact details of how we are sourcing the electricity and how well the optimisation is working. If I own a large number of sources of various types and can meet all demand myself I might aim for max/min ratio so that I do not need to maintain extra facilities to cope with the peaks, if I am a smaller provider and need to buy on the wholesale market I might aim to reduce flatness to keep my expenditure on the wholesale market down.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Moving Further}
 Realistic power profiles and start times. Make a thermal load agent and test that
-under similar simple circumstances. Realistic thermal load parameters. Match
-load to a given supply profile rather than just flattening (tidal/wind/wave)
+under similar simple circumstances. Realistic thermal load parameters. This is replicating \cite{ramchurn2011agent}. Match load to a given supply profile rather than just flattening (tidal/wind/wave). This is new, I have seen schemes proposed that manage demand by sending command signals to cooperative consumers\cite{ramchurn2011agent2} , schemes that use price as a non-trivial control signal in real time and schemes that expose the agent to predicted wholesale prices ahead of time, but none that expose the agent to a calculated price ahead of time. This method therefore has both the opportunity to make greater savings that is available with prices published ahead of time and the flexibility to shape demand that is available from multiple degrees of freedom in control.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Even Further}
-Combine consumer loads, static loads and thermal loads in realistic proportions
-to make a model of a real customer set.
-Moving focus away from the tariff setting somewhat: build models of populations with parameters that are affected by location/weather/timeofyear. Try
-to do inference on the distribution of agent parameters based on the response
-to a tariff. Example: combining response with weather maps over several days
-I might be able to work out the geographical distribution of heating/cooling
-system powers and setpoints and so have a better model for demand prediction
-under weather variations in future.
+Combine consumer loads, static loads and thermal loads in realistic proportions to make a model of a real customer set and measure how much demand can be influenced and therefore how much money can be saved. This would be a demonstration that setting and publishing tariffs ahead of time is a useful technique and should therefore be implemented in reality. This would need some game-theory style calculations to show that a supplier switching to this system with the current non-smart consumer base would not lose money and that consumers would have an incentive to become smart if the system was implemented.
+Moving focus away from the tariff setting somewhat: build models of populations with parameters that are affected by location/weather/timeofyear. Try to do inference on the distribution of agent parameters based on the response
+to a tariff. Example: combining response with weather maps over several days I might be able to work out the geographical distribution of heating/cooling system powers and setpoints and so have a better model for demand prediction under weather variations in future. This is not clearly something that will benefit from GPGO, I think it would be something interesting to apply some other techniques to in the future, but easier to get started with than something completely different.
 
 \bibliography{problem_spec.bib}{}
 \bibliographystyle{plain}
