@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import scipy as sp
+from scipy import random as spr
 import numpy as sp
 from matplotlib import pyplot as plt
 import operator
@@ -67,7 +68,7 @@ class rect_SSL_agent(agent):
 		return u
 
 	def schedule(self):
-		print "a_s"
+		
 		#only optimise to the nearest minute
 		assert(self.tf>self.t0+self.ld)
 		best_c = -sp.Inf
@@ -106,6 +107,7 @@ class agent_set():
 		for a in self.A:
 			f.write(str(a.get_agentpara())+'\n')
 		f.close()
+
 	def read_agents(self,fname):
 		self.A=[]
 		f=open(fname)
@@ -118,15 +120,10 @@ class agent_set():
 			a.schedule()
 		return
 
-	def set_SG_tariff(self,theta):
-		#sum of gaussians spaced at support points
-		N=len(theta)
-		
-		spoints = [i*24*3600/float(N-1) for i in range(N)]
-		tariff = lambda t:sum([theta[i]*sp.exp(-((t-spoints[i])**2)/float(2*(24*3600/float(N))**2)) for i in range(N)])
+	def set_tariff(self,tariff):
 		for a in self.A:
 			a.inform_tariff(tariff)
-		return tariff
+		return
 
 	def schedule(self):
 		for a in self.A:
@@ -137,29 +134,97 @@ class agent_set():
 		for a in self.A:
 			load=map(operator.add,load,a.get_load_m())
 		return load
-	
-def main():
-	AS = agent_set()
-	AS.read_agents('Adef.txt')
-	tr=AS.set_SG_tariff([0.25,0.15,0.13,0.12,0.12,0.11,0.1,0.1])
-	AS.schedule()
-	load = AS.get_load_m()
-	tm=range(24*60)
-	plt.figure()
-	plt.plot(tm,map(tr,[i*60 for i in tm]))
-	plt.figure()
-	plt.plot(tm,load)
-	plt.show()
-	#a=rect_SSL_agent([60*60*2,60*60*24,60*60,1.,0.5/3600.])
-	#a.inform_tariff(tf)
-	#a.schedule()
-	#print a.ts
-	#a.plotm()
-	#f=open('Adef.txt','w')
-	#for i in range(4):
-	#	f.write(str([60*60*(i+1),60*60*24,60*60,1.,0.5/3600.])+'\n')
-	#f.close()
-	#c=community()
+
+def create_SSL_agents(fname):
+	f = open(fname,"w")
+	N=25
+	for i in range(N):
+		t0=int(min(3600*spr.gamma(6,1),23*3600)) #time the agent can start
+		tf=int(min(t0+3600*spr.gamma(6,1),24*3600)) #time the agent must finish by (s)
+		ld=3600 #time the agent runs for (s)
+		lv= 1.#value of the load when running
+		uf=spr.gamma(1,1)*0.5/3600. #utility gradient for deferal
+		a=rect_SSL_agent([t0,tf,ld,lv,uf])
+		f.write(str(a.get_agentpara())+'\n')
+	f.close()
 	return
 
-main()
+def load_cost_flatness(load):
+	#squared normalised difference from a flat load
+	mean=sum(load)/float(len(load))
+	err = sum([((i-mean)/mean)**2 for i in load])/len(load)
+	return err
+
+def gen_SG_tariff(theta):
+		#sum of gaussians spaced at support points
+		N=len(theta)
+		spoints = [i*24*3600/float(N-1) for i in range(N)]
+		tariff = lambda t:sum([theta[i]*sp.exp(-((t-spoints[i])**2)/float(2*(24*3600/float(N))**2)) for i in range(N)])
+		return tariff
+
+
+class objective():
+	def __init__(self,afname,loadcostfn,tariffgen):
+		self.AS = agent_set()
+		self.AS.read_agents(afname)
+		self.loadcostfn=loadcostfn
+		self.tariffgen=tariffgen
+		return
+	
+	def eval_under_tariff(self,tariffpara):
+		tariff=self.tariffgen(tariffpara)
+		self.AS.set_tariff(tariff)
+		self.AS.schedule()
+		load=self.AS.get_load_m()
+		cost=self.loadcostfn(load)
+		return cost
+
+	def evalandplot_under_tariff(self,tariffpara):
+		tariff=self.tariffgen(tariffpara)
+		self.AS.set_tariff(tariff)
+		self.AS.schedule()
+		load=self.AS.get_load_m()
+		cost=self.loadcostfn(load)
+
+		tm=range(24*60)
+		plt.figure()
+		plt.plot(tm,map(tariff,[i*60 for i in tm]))
+		plt.figure()
+		plt.plot(tm,load)
+		plt.show()
+		return cost
+
+	def flat_ref(self):
+		tariff = lambda x:1.
+		self.AS.set_tariff(tariff)
+		self.AS.schedule()
+		load=self.AS.get_load_m()
+		cost=self.loadcostfn(load)
+
+		tm=range(24*60)
+		plt.figure()
+		plt.plot(tm,map(tariff,[i*60 for i in tm]))
+		plt.figure()
+		plt.plot(tm,load)
+		plt.show()
+		return cost
+def main():
+	#create_SSL_agents("tst.txt")
+	o = objective("tst.txt",load_cost_flatness,gen_SG_tariff)
+	trf=[1,1,1,1,1,1,1,1]
+	print o.evalandplot_under_tariff(trf)
+	
+	load = o.AS.get_load_m()
+	#tm=range(24*60)
+	#plt.figure()
+	#plt.plot(tm,map(gen_SG_tariff(trf),[i*60 for i in tm]))
+	#plt.figure()
+	#plt.plot(tm,load)
+	
+	#plt.show()
+	
+	return
+
+#main()
+
+
