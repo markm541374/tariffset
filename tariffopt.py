@@ -21,7 +21,7 @@ class agent:
 		#init the agent with its goals
 		return
 	def inform_tariff(self,T):
-		#informs the agent of a new tariff. T should be a function accepting time(s) and returning cost (pounds/W)
+		#informs the agent of a new tariff. T should be a function accepting time(s) and returning cost (pounds/unithour)
 		self.T=T
 		return
 	
@@ -41,7 +41,7 @@ class rect_SSL_agent(agent):
 		self.tf=para[1] #time the agent must finish by (s)
 		self.ld=para[2] #time the agent runs for (s)
 		self.lv=para[3] #value of the load when running
-		self.uf=para[4] #utility gradient for deferal
+		self.uf=para[4] #utility gradient for deferal pounds_eq/sec
 		assert(self.tf<=24*60*60)
 		return
 
@@ -72,9 +72,9 @@ class rect_SSL_agent(agent):
 			return -sp.Inf
 		cost_acc=0
 		for i in range(self.ld/60):
-			cost_acc+=self.lv*self.T(self.t0+dt+i*60)
+			cost_acc+=self.lv*self.T(self.t0+dt+i*60.)/60.
 		u = -cost_acc-dt*self.uf
-		
+		#print "dt: "+str(dt)+" u: "+str(u)
 		return u
 
 	def schedule(self):
@@ -89,12 +89,12 @@ class rect_SSL_agent(agent):
 		cs=[0]*len(tsl)
 		
 		cs=map(self.evaluate_u,tsl)
-		for c in cs:
+		for i,c in enumerate(cs):
 			
 			if c>best_c:
 				best_c=c
 				best_dt=i*60
-		
+		#print "best_c: "+str(best_c)+" best_dt: "+str(best_dt)
 		self.ts=self.t0+best_dt
 		return self.ts
 
@@ -160,13 +160,13 @@ class agent_set():
 
 def create_SSL_agents(fname):
 	f = open(fname,"w")
-	N=25
+	N=50
 	for i in range(N):
 		t0=int(min(3600*spr.gamma(6,1),23*3600)) #time the agent can start
-		tf=int(min(t0+3600*(1+spr.gamma(6,1)),24*3600)) #time the agent must finish by (s)
+		tf=int(min(t0+3600*(1+spr.gamma(12,1)),24*3600)) #time the agent must finish by (s)
 		ld=3600 #time the agent runs for (s)
 		lv= 1.#value of the load when running
-		uf=spr.gamma(1,1)*0.5/3600. #utility gradient for deferal
+		uf=0.1*spr.gamma(1,1)/3600. #utility gradient for deferal
 		a=rect_SSL_agent([t0,tf,ld,lv,uf])
 		f.write(str(a.get_agentpara())+'\n')
 	f.close()
@@ -250,10 +250,8 @@ class objective():
 
 
 def main():
-	#create_SSL_agents("ts0.txt")
-	#create_SSL_agents("ts1.txt")
-	#create_SSL_agents("ts2.txt")
 	
+
 	o = objective(["ts0.txt","ts1.txt","ts2.txt"],load_cost_flatness,gen_SG_tariff)
 	trf=[1,4,1,1,2,1,1.5,1]
 	print o.eval_under_tariff(trf,plot_=True)
@@ -268,7 +266,14 @@ def main():
 	#plt.show()
 	
 	return
-
-main()
-
+def create():
+	create_SSL_agents("ts0.txt")
+	create_SSL_agents("ts1.txt")
+	create_SSL_agents("ts2.txt")
+	create_SSL_agents("ts3.txt")
+	create_SSL_agents("ts4.txt")
+	create_SSL_agents("ts5.txt")
+	return
+#main()
+create()
 
