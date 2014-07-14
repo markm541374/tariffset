@@ -7,6 +7,12 @@ from matplotlib import pyplot as plt
 import operator
 import ast
 
+import sys
+from multiprocessing import Pool, Process, Pipe
+import os
+
+os.system("taskset -p 0xff %d" % os.getpid())
+
 #all times are in seconds
 
 
@@ -26,6 +32,9 @@ class agent:
 		return #parameter vector that fully defines the agent
 
 #agent with a single fixed load that runs at a constant level for a fixed time
+
+
+
 class rect_SSL_agent(agent):
 	def __init__(self,para):
 		self.t0=para[0] #time the agent can start
@@ -55,6 +64,7 @@ class rect_SSL_agent(agent):
 			lp[i]=self.lv
 		return lp
 	def evaluate_u(self,dt):
+		
 		#find the utility of a given deferal ####per munite accuracy
 		if self.t0+dt+self.ld>=self.tf:
 			return -sp.Inf
@@ -74,15 +84,19 @@ class rect_SSL_agent(agent):
 		best_c = -sp.Inf
 		best_dt = -2
 		
-		for i in range(0,(self.tf-self.t0-self.ld)/60):
+		tsl = [i*60 for i in range(0,(self.tf-self.t0-self.ld)/60)]
+		
+		cs=[0]*len(tsl)
+		
+		cs=map(self.evaluate_u,tsl)
+		for c in cs:
 			
-			c = self.evaluate_u(i*60)
 			if c>best_c:
 				best_c=c
 				best_dt=i*60
 		
 		self.ts=self.t0+best_dt
-		return
+		return self.ts
 
 	def plotm(self):
 		T=[i/60. for i in range(0,24*60)]
@@ -97,6 +111,11 @@ class rect_SSL_agent(agent):
 		plt.show()
 		return
 
+def multischedule(conn,agent):
+	ts = agent.schedule()
+	conn.send(ts)
+	conn.close()
+	return ts
 	
 class agent_set():
 	def __init__(self):
@@ -115,19 +134,23 @@ class agent_set():
 			self.A.append(rect_SSL_agent(ast.literal_eval(line.strip('\n'))))
 		return
 
-	def schedule_agents(self):
-		for a in self.A:
-			a.schedule()
-		return
-
 	def set_tariff(self,tariff):
 		for a in self.A:
 			a.inform_tariff(tariff)
 		return
 
 	def schedule(self):
-		for a in self.A:
-			a.schedule()
+		Procs=[0]*len(self.A)
+		for i,a in enumerate(self.A):
+			pc,cc=Pipe()
+			p = Process(target=multischedule, args=(cc,a,))
+			p.start()
+			Procs[i]=[p,pc]
+		for i,a in enumerate(self.A):
+			ts = Procs[i][1].recv()
+			self.A[i].ts=ts
+			Procs[i][0].join()
+		return 
 
 	def get_load_m(self):	
 		load = [0.]*(24*60)
@@ -140,7 +163,7 @@ def create_SSL_agents(fname):
 	N=25
 	for i in range(N):
 		t0=int(min(3600*spr.gamma(6,1),23*3600)) #time the agent can start
-		tf=int(min(t0+3600*spr.gamma(6,1),24*3600)) #time the agent must finish by (s)
+		tf=int(min(t0+3600*(1+spr.gamma(6,1)),24*3600)) #time the agent must finish by (s)
 		ld=3600 #time the agent runs for (s)
 		lv= 1.#value of the load when running
 		uf=spr.gamma(1,1)*0.5/3600. #utility gradient for deferal
@@ -164,57 +187,78 @@ def gen_SG_tariff(theta):
 
 
 class objective():
-	def __init__(self,afname,loadcostfn,tariffgen):
-		self.AS = agent_set()
-		self.AS.read_agents(afname)
+	def __init__(self,afnames,loadcostfn,tariffgen):
+		self.N=len(afnames)
+		self.ASs=[]
+		for i in range(self.N):
+			self.ASs.append(agent_set())
+			self.ASs[i].read_agents(afnames[i])
 		self.loadcostfn=loadcostfn
 		self.tariffgen=tariffgen
 		return
 	
-	def eval_under_tariff(self,tariffpara):
-		tariff=self.tariffgen(tariffpara)
-		self.AS.set_tariff(tariff)
-		self.AS.schedule()
-		load=self.AS.get_load_m()
-		cost=self.loadcostfn(load)
-		return cost
+	
 
-	def evalandplot_under_tariff(self,tariffpara):
+	def eval_under_tariff(self,tariffpara,plot_=False):
 		tariff=self.tariffgen(tariffpara)
-		self.AS.set_tariff(tariff)
-		self.AS.schedule()
-		load=self.AS.get_load_m()
-		cost=self.loadcostfn(load)
+		cost=0.
+		loads=[]
+		for i in range(self.N):
+			self.ASs[i].set_tariff(tariff)
+		
+		
+		map(agent_set.schedule,self.ASs)
 
-		tm=range(24*60)
-		plt.figure()
-		plt.plot(tm,map(tariff,[i*60 for i in tm]))
-		plt.figure()
-		plt.plot(tm,load)
-		plt.show()
+
+		for i in range(self.N):
+			load=self.ASs[i].get_load_m()
+			loads.append(load)
+			cost+=self.loadcostfn(load)
+		cost=cost/float(self.N)
+		if plot_:
+			tm=range(24*60)
+			plt.figure()
+			plt.plot(tm,map(tariff,[i*60 for i in tm]))
+		
+			plt.figure()
+			for i in range(self.N):
+				plt.plot(tm,loads[i])
+			
+			plt.show()
+		
 		return cost
 
 	def flat_ref(self):
 		tariff = lambda x:1.
-		self.AS.set_tariff(tariff)
-		self.AS.schedule()
-		load=self.AS.get_load_m()
-		cost=self.loadcostfn(load)
+		cost=0.
+		loads=[]
+		for i in range(self.N):
+			self.ASs[i].set_tariff(tariff)
+			self.ASs[i].schedule()
+			load=self.ASs[i].get_load_m()
+			loads.append(load)
+			cost+=self.loadcostfn(load)
 
 		tm=range(24*60)
 		plt.figure()
 		plt.plot(tm,map(tariff,[i*60 for i in tm]))
 		plt.figure()
-		plt.plot(tm,load)
+		for i in range(self.N):
+			plt.plot(tm,loads[i])
 		plt.show()
 		return cost
+
+
 def main():
-	#create_SSL_agents("tst.txt")
-	o = objective("tst.txt",load_cost_flatness,gen_SG_tariff)
-	trf=[1,1,1,1,1,1,1,1]
-	print o.evalandplot_under_tariff(trf)
+	#create_SSL_agents("ts0.txt")
+	#create_SSL_agents("ts1.txt")
+	#create_SSL_agents("ts2.txt")
 	
-	load = o.AS.get_load_m()
+	o = objective(["ts0.txt","ts1.txt","ts2.txt"],load_cost_flatness,gen_SG_tariff)
+	trf=[1,4,1,1,2,1,1.5,1]
+	print o.eval_under_tariff(trf,plot_=True)
+	
+	#load = o.AS.get_load_m()
 	#tm=range(24*60)
 	#plt.figure()
 	#plt.plot(tm,map(gen_SG_tariff(trf),[i*60 for i in tm]))
@@ -225,6 +269,6 @@ def main():
 	
 	return
 
-#main()
+main()
 
 
