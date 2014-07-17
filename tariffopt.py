@@ -179,8 +179,13 @@ def load_cost_flatness(load):
 	return err
 
 def gen_SG_tariff(theta):
+		
+		
 		#sum of gaussians spaced at support points
 		N=len(theta)
+		if N==1:
+			theta=sp.array(theta).ravel()
+			N=len(theta)
 		spoints = [i*24*3600/float(N-1) for i in range(N)]
 		tariff = lambda t:sum([theta[i]*sp.exp(-((t-spoints[i])**2)/float(2*(24*3600/float(N))**2)) for i in range(N)])
 		return tariff

@@ -1,0 +1,4 @@
+*.pyc
+*~
+.goutputstream-PQTZHX
+.ipynb_checkpoints/
