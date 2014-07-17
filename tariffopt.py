@@ -6,10 +6,12 @@ import numpy as sp
 from matplotlib import pyplot as plt
 import operator
 import ast
-
+from functools import partial
 import sys
 from multiprocessing import Pool, Process, Pipe
 import os
+import GPGO
+import time
 
 os.system("taskset -p 0xff %d" % os.getpid())
 
@@ -279,6 +281,54 @@ def create():
 	create_SSL_agents("ts4.txt")
 	create_SSL_agents("ts5.txt")
 	return
+
+class experiment():
+	def __init__(self,kernels,ensemblefnames,upper,lower,dim):
+		self.kernels=kernels
+		self.ensemblefnames=ensemblefnames
+		self.upper=upper
+		self.lower=lower
+		self.dim=dim
+		self.o=objective(ensemblefnames,load_cost_flatness,gen_SG_tariff)
+		self.objective=lambda X:self.o.eval_under_tariff(X,plot_=True)
+		self.G=GPGO.GPGO(self.kernels,self.objective,self.upper,self.lower,self.dim)
+		return
+
+	def loadtrace(self,fname):
+		self.G.loadtrace(fname)
+		return
+
+	def savetrace(self,fname):
+		self.G.savetrace(fname)
+		return
+
+	def stepn(self,n):
+		for i in range(n):
+			print "----x----x----\nstep "+str(i+1)+" of "+str(n)+"\n"
+			t0=time.time()
+			print "searching for best eval location"
+			l=self.G.findnext()[0]
+			t1=time.time()
+			print "searchtime = "+str(t1-t0)
+    			print "Found optimum: " + str(l)
+			print "evaluating..."
+			y=self.G.evaluate(l)
+			t2=time.time()
+			print "evaluated as "+str(y)
+			print "evaluation time = "+str(t2-t1)
+			print "kernel log lks after evaluation: "+str(self.G.llks)
+			print "----x----x----\n"
+			self.savetrace("defaulttrace.txt~")
+		return
+	def plotflatresponse(self):
+		y=self.o.flat_ref()
+		print "flatresponse: "+str(y)
+		return
+
+	def plotbestresponse(self):
+		y=self.objective(self.G.best[0])
+		print "bestresponse: "+str(y)
+		return
 #main()
 create()
 
