@@ -56,6 +56,8 @@ class GPGO():
             self.KyRs.append(spl.cho_factor(tmp))
             self.llks.append((-self.Y.T*tmp*self.Y-0.5*sp.log(spl.det(tmp))-0.5*self.nsam*sp.log(2*sp.pi))[0,0])
         self.renorm=sum(map(sp.exp,self.llks))
+	if self.renorm==0.:
+		raise ValueError("renorm=0.0")
         return delta
     
     def evaluate(self,x):
@@ -74,8 +76,14 @@ class GPGO():
             self.KyRs.append(spl.cho_factor(tmp))
             self.llks.append((-self.Y.T*tmp*self.Y-0.5*sp.log(spl.det(tmp))-0.5*self.nsam*sp.log(2*sp.pi))[0,0])
         self.renorm=sum(map(sp.exp,self.llks))
+	if self.renorm==0.:
+		raise ValueError("renorm=0.0")
         return y
-    
+    def eval_kernel_llk(self,kf):
+	tmp=self.buildKsym(kf,self.X)
+	llk= (-self.Y.T*tmp*self.Y-0.5*sp.log(spl.det(tmp))-0.5*self.nsam*sp.log(2*sp.pi))[0,0]
+	return llk
+
     def plotstate1D(self,llimit,ulimit,allK=False):
         assert self.dim==1
         size=100
@@ -102,17 +110,7 @@ class GPGO():
            
             Esum=Esum+np.array(E)*factor
             Msum=Msum+np.array(m)*factor
-            #if allK:
-             #   plt.figure(figsize=(20,5))
-              #  plt.subplot(131)
-               # try:
-                #    plt.contour(xaxis,yaxis,mgrid,50)
-                 #except ValueError:
-            #        pass
-             #   plt.subplot(132)
-              #  plt.contour(xaxis,yaxis,Cgrid,50)
-               # plt.subplot(133)
-                #plt.contour(xaxis,yaxis,Egrid,50)
+            
         Msum=Msum/renorm
         
         plt.figure(figsize=(14,5))
