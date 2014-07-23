@@ -24,9 +24,9 @@ where $\delta(t) \in (0,1)$ determines the power setting of the heater. For a su
 \begin{equation}
 T_{n+1} =  T_{n}-\frac{\Delta t k}{cm}(T_{n}-T_{n}^{e}) + \frac{\Delta t P \delta_{n}}{cm} 
 \end{equation}
-If the time period under consideration is discretized into $N$ periods of $\Delta t$ then $T, T^{e},\delta$ can be represented as column vectors of size $N+1$ and the update rule can be expressed as a matrix equation and simplified to give
+If the time period under consideration is discretized into $N$ periods of $\Delta t$ then $T, T^{e},\delta$ can be represented as column vectors of size $N$ and the update rule can be expressed as a matrix equation and simplified to give
 \begin{equation}
-\left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right) \underline{T} = \frac{\Delta t k}{cm}\mathbf{U}\underline{T}^{e}+\frac{P}{cm}\underline{\delta}+\underline{\Gamma}
+\left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right) \underline{T} = \frac{\Delta t k}{cm}\mathbf{U}\underline{T}^{e}+\frac{P}{cm}\underline{\delta}
 \end{equation}
 \begin{equation}
 \underline{T}=\mathbf{\Phi} \underline{\delta}+\underline{\Psi}
@@ -36,23 +36,17 @@ where
 \mathbf{\Phi}= \frac{P}{cm} \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1}
 \end{equation}
 \begin{equation}
-\underline{\Psi}= \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1} \left( \frac{\Delta t k}{cm}\mathbf{U}\underline{T}^{e} + \underline{\Gamma}\right)
+\underline{\Psi}= \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1} \left( \frac{\Delta t k}{cm}\mathbf{U}\underline{T}^{e}\right)
 \end{equation}
 and
 \begin{equation}
 \mathbf{U} = \left[
 \begin{array}{c|c}
-\underline{0}_{1\times N} & 0 \\ \hline
+\underline{0}_{1\times N} & 1 \\ \hline
 \mathbf{I}_{N} & \underline{0}_{N \times 1}
 \end{array}\right]
 \end{equation}
-\begin{equation}
-\underline{\Gamma} = \left[
-\begin{array}{c}
-T_{0} \\ \hline
-\underline{0}_{N \times 1}
-\end{array}\right]
-\end{equation}
+This formulation assumes a periodic nature such that the temperature at the end of the N\textit{th} teimestep is equal to the temperature at the start of the 0\textit{th}.
 Thus the given all the required environmental constants the temperature profile has been expressed as an affine function of the control input.
 \section{}
 There are to costs associated with a given control input. The actuation cost is $\underline{\Lambda}^{T} \underline{\delta}$ where the $\Lambda_{n}$, is the unit price of electricity at $t=n \Delta t$. The utility cost is $(\underline{T}-\underline{T}^s)^{T}\mathbf{Q}(\underline{T}-\underline{T}^s)$ where ${T}^{s}_{n}$ is the desired temperature at time $n \Delta t$ and $\mathbf{Q}=\mathrm{diag}(\underline{q})$ where $q_{n}$ is the coefficient of quadratic cost of deviation from the desired temperature at the same time.

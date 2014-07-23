@@ -8,42 +8,41 @@ N=1000
 M=50
 J=20
 
-T0=5.
+
 
 P=3
 cm=4.
 k=0.1
 dt=1.
 
-Te=sp.matrix([2-2*sp.cos(i*2*sp.pi/float(N)) for i in range(N+1)]).T
+Te=sp.matrix([2-2*sp.cos(i*2*sp.pi/float(N)) for i in range(N)]).T
 
-Ts=sp.matrix(18*sp.ones([N+1,1]))
+Ts=sp.matrix(18*sp.ones([N,1]))
 
-Lambda = sp.matrix([4+4*sp.exp(-0.0001*(i-600)**2) for i in range(N+1)]).T
+Lambda = sp.matrix([4+4*sp.exp(-0.0001*(i-600)**2) for i in range(N)]).T
 
-Gamma = sp.matrix(sp.zeros([N+1,1]))
-Gamma[0,0]=T0
 
-U=sp.matrix(sp.vstack([sp.zeros([1,N+1]),sp.hstack([sp.eye(N),sp.zeros([N,1])])]))
 
-Phi = P/float(cm) * (sp.eye(N+1)-(1-dt*k/cm)*U).I
+U=sp.matrix(sp.vstack([sp.hstack([sp.zeros([1,N-1]),sp.ones([1,1])]),sp.hstack([sp.eye(N-1),sp.zeros([N-1,1])])]))
 
-Psi=(sp.eye(N+1)-(1-dt*k/cm)*U).I * (dt*k/cm*U*Te+Gamma)
+Phi = P/float(cm) * (sp.eye(N)-(1-dt*k/cm)*U).I
 
-D = sp.vstack([sp.zeros([1,M]),sp.kron(sp.eye(M),sp.ones([J,1]))])
+Psi=(sp.eye(N)-(1-dt*k/cm)*U).I * (dt*k/cm*U*Te)
+
+D = sp.kron(sp.eye(M),sp.ones([J,1]))
 
 #plt.plot(sp.array( Phi*D*sp.matrix(sp.array([0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0])).T + Psi))
 #plt.show()
 
-q = sp.matrix(0.1*sp.ones([N+1,1]))
+q = sp.matrix(0.1*sp.ones([N,1]))
 for i in range(250):
 	Ts[i,0]=8
 	q[i,0]=0.05
-for i in range(800,1001):
+for i in range(800,1000):
 	Ts[i,0]=8
 	q[i,0]=0.05
-Q = sp.matrix(sp.zeros([N+1,N+1]))
-for i in range(N+1):
+Q = sp.matrix(sp.zeros([N,N]))
+for i in range(N):
 	Q[i,i]=q[i,0]
 
 
@@ -57,7 +56,7 @@ St = 2*(Psi-Ts).T*Q*Phi*D + Lambda.T*D
 K=sp.matrix(sp.vstack([sp.eye(M),-sp.eye(M)]))
 Y=sp.matrix(sp.vstack([sp.ones([M,1]),sp.zeros([M,1])]))
 for i in range(100,200):
-	e=sp.matrix(sp.zeros([1,N+1]))
+	e=sp.matrix(sp.zeros([1,N]))
 	e[0,i]=1
 	K=sp.vstack([K,-e*Phi*D])
 	Y=sp.vstack([Y,-12+e*Psi])
@@ -68,7 +67,7 @@ p = matrix(sp.array(St).ravel())
 G = matrix(K)
 h = matrix(sp.array(Y).ravel())
 
-alpha = sp.matrix(sp.zeros([1,N+1]))
+alpha = sp.matrix(sp.zeros([1,N]))
 for i in range(250,800):
 	alpha[0,i]=1
 A=alpha*Phi*D
