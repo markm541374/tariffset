@@ -45,7 +45,7 @@ class rect_SSL_agent(agent):
 		self.t0=para[0] #time the agent can start
 		self.tf=para[1] #time the agent must finish by (s)
 		self.ld=para[2] #time the agent runs for (s)
-		self.lv=para[3] #value of the load when running
+		self.lv=para[3] #value of the load when running (W)
 		self.uf=para[4] #utility gradient for deferal pounds_eq/sec
 		assert(self.tf<=24*60*60)
 		return
@@ -103,20 +103,37 @@ class rect_SSL_agent(agent):
 		#print "best_c: "+str(best_c)+" best_dt: "+str(best_dt)
 		self.ts=self.t0+best_dt
 		return [self.ts]
+
 	def set_schedule_result(self,para):
 		self.ts=para[0]
 		return
 
 	def plotm(self):
-		T=[i/60. for i in range(0,24*60)]
-		u = []
-		tar = []
-		for t in [60*60*i for i in T]:
-			tar.append(self.T(t)*3600) #multiply by 3600 so that 1W for 1 hour shows as 1
-			u.append(self.evaluate_u(t-self.t0))
-		plt.figure()
-		plt.plot(T,u)
-		plt.plot(T,tar)
+		N=24*60
+		Lambda = sp.matrix(map(self.T,[i*60 for i in range(N)])).T
+		Load = sp.matrix(sp.zeros([N,1]))
+		Fs = sp.matrix(sp.zeros([N,1]))
+		for i in range(self.ts/60,(self.ts+self.ld)/60):
+			Load[i,0]=self.lv
+		for i in range(self.ts/60,self.tf/60):
+			Fs[i,0]=1
+
+		plt.figure(figsize=(18,12))
+		ax1 = plt.subplot2grid((3,5),(0,0),rowspan=1,colspan=5)
+		ax1.set_ylabel("Load (W)")
+		ax1.plot(sp.array(Load))
+		ax1.axis([0,N,0,1])
+
+		ax2 = plt.subplot2grid((3,5),(1,0),rowspan=1,colspan=5)
+		ax2.set_ylabel("Feasible")
+		ax2.plot(sp.array(Fs))
+		ax2.axis([0,N,0,2])
+		plt.draw()
+
+		ax3 = plt.subplot2grid((3,5),(2,0),rowspan=1,colspan=5)
+		ax3.set_ylabel("Tariff")
+		ax3.plot(sp.array(Lambda))
+		ax3.axis([0,N,0,40])
 		plt.draw()
 		return
 
@@ -140,7 +157,6 @@ class quadthermo_agent(agent):
 		return para
 
 	def schedule(self):
-		
 		#number of minutes
 		N=24*60
 		#number of pwn periods
@@ -156,7 +172,6 @@ class quadthermo_agent(agent):
 		#Ts is the target temperature
 		Ts=sp.matrix(sp.zeros([N,1]))
 
-		
 		for onperiod in self.activetimes:
 			start=onperiod[0]
 			stop=onperiod[1]
@@ -165,25 +180,15 @@ class quadthermo_agent(agent):
 				Ts[i,0]=Tt
 				Q[i,i]=self.q
 		
-				
-			
-		
 		U=sp.matrix(sp.vstack([sp.hstack([sp.zeros([1,N-1]),sp.ones([1,1])]),sp.hstack([sp.eye(N-1),sp.zeros([N-1,1])])]))
 		
 		PhiI = float(self.cm)/self.P * (sp.eye(N)-(1-self.dt*self.k/self.cm)*U)
-		
 		PhiLU = spl.lu_factor(PhiI)
-		
-		#Psi=self.cm/self.P*PhiI.I*(self.dt*self.k/self.cm*U*Te)
 		Psi=self.cm/self.P*spl.lu_solve(PhiLU, (self.dt*self.k/self.cm*U*Te))
-		
 		D = sp.kron(sp.eye(M),sp.ones([J,1]))
-		
 		PhiD = spl.lu_solve(PhiLU,D)
-		#PhiD = PhiI.I*D
 		R = PhiD.T*Q*PhiD
-		
-		St = 2*(Psi-Ts).T*Q*PhiD + Lambda.T*D
+		St = 2*(Psi-Ts).T*Q*PhiD + self.P*Lambda.T*D
 		
 		K=sp.matrix(sp.vstack([sp.eye(M),-sp.eye(M),-PhiD,PhiD]))
 		Y=sp.matrix(sp.vstack([sp.ones([M,1]),sp.zeros([M,1]),-self.absmin*sp.ones([N,1])+Psi,self.absmax*sp.ones([N,1])-Psi]))
@@ -192,45 +197,40 @@ class quadthermo_agent(agent):
 			start=onperiod[0]
 			stop=onperiod[1]
 			Tt=onperiod[2]
-			M=onperiod[3]
+			Margin=onperiod[3]
 			for i in range(start,stop):
 				e=sp.matrix(sp.zeros([N,1]))
 				e[i,0]=1
 				K=sp.vstack([K,-e.T*PhiD,e.T*PhiD])
-				Y=sp.vstack([Y,-sp.matrix(Tt-M)+e.T*Psi,sp.matrix(Tt+M)-e.T*Psi])
+				Y=sp.vstack([Y,-sp.matrix(Tt-Margin)+e.T*Psi,sp.matrix(Tt+Margin)-e.T*Psi])
 		
 		Qd = 2*cm(R)
-		
 		p = cm(sp.array(St).ravel())
-		
 		G = cm(K)
-		
 		h = cm(sp.array(Y).ravel())
-		
+
 		sol=cs.qp(Qd, p, G, h)
-		
 		u=sp.matrix(sol['x'])
 		
 		Ti=PhiD*u+Psi
-		
+
 		self.Ti=Ti
 		self.Te=Te
 		self.Ts=Ts
 		delta=D*u
 		self.delta=delta
-		q=sp.diag(Q)
-		self.q=q
+		qv=sp.diag(Q)
+		self.qv=qv
 		self.N=N
 		self.Lambda=Lambda
-		
-		return [Ti,Te,Ts,delta,q,N,Lambda]
+		return [Ti,Te,Ts,delta,qv,N,Lambda]
 
 	def set_schedule_result(self,para):
 		self.Ti=para[0]
 		self.Te=para[1]
 		self.Ts=para[2]
 		self.delta=para[3]
-		self.q=para[4]
+		self.qv=para[4]
 		self.N=para[5]
 		self.Lambda=para[6]
 		return
@@ -246,9 +246,10 @@ class quadthermo_agent(agent):
 		ax0.axis([0,self.N,0,22])
 
 		ax1 = plt.subplot2grid((8,5),(4,0),rowspan=1,colspan=5)
-		ax1.set_ylabel("Input")
-		ax1.plot(sp.array(self.delta))
-		ax1.axis([0,self.N,0,1])
+		ax1.set_ylabel("Load")
+		ax1.plot(sp.array(self.P*self.delta))
+		#ax1.plot(sp.array(self.Lambda))
+		ax1.axis([0,self.N,0,self.P])
 
 		ax2 = plt.subplot2grid((8,5),(5,0),rowspan=1,colspan=5)
 		ax2.set_ylabel("Tariff")
@@ -257,7 +258,7 @@ class quadthermo_agent(agent):
 
 		ax3 = plt.subplot2grid((8,5),(6,0),rowspan=1,colspan=5)
 		ax3.set_ylabel("CostWeight")
-		ax3.plot(sp.array(self.q))
+		ax3.plot(sp.array(self.qv))
 		ax3.axis([0,self.N,0,2])
 
 		plt.draw()
@@ -306,12 +307,14 @@ class agent_set():
 			p = Process(target=multischedule, args=(cc,a,))
 			p.start()
 			Procs[i]=[p,pc]
-		
+		time.sleep(4)
 		for i,a in enumerate(self.A):
-			
+			print "recv"+str(i)
 			ans = Procs[i][1].recv()
 			self.A[i].set_schedule_result(ans)
+			
 			Procs[i][0].join()
+			print "joined"+str(i)
 			#self.A[i].plotm()
 		
 		return 
@@ -372,12 +375,13 @@ class objective():
 		tariff=self.tariffgen(tariffpara)
 		cost=0.
 		loads=[]
+		print "0"
 		for i in range(self.N):
 			self.ASs[i].set_tariff(tariff)
-		
+		print "1"
 		
 		map(agent_set.schedule,self.ASs)
-
+		print "2"
 
 		for i in range(self.N):
 			load=self.ASs[i].get_load_m()
@@ -385,15 +389,20 @@ class objective():
 			cost+=self.loadcostfn(load)
 		cost=cost/float(self.N)
 		if plot_:
+			print "3"
 			tm=range(24*60)
-			plt.figure()
-			plt.plot(tm,map(tariff,[i*60 for i in tm]))
-		
-			plt.figure()
+
 			for i in range(self.N):
-				plt.plot(tm,loads[i])
-			
-			plt.show()
+				plt.figure(figsize=(18,12))
+				ax0 = plt.subplot2grid((8,5),(3,0),rowspan=1,colspan=5)
+				ax0.plot(tm,map(tariff,[j*60 for j in tm]))
+				ax0.set_ylabel("Tariff")
+				
+				ax1 = plt.subplot2grid((8,5),(0,0),rowspan=3,colspan=5)
+				ax1.plot(tm,loads[i])
+				ax1.set_ylabel("Load")
+
+			plt.draw()
 		
 		return cost
 
@@ -420,11 +429,16 @@ class objective():
 
 def main():
 	
-
 	o = objective(["ts0.txt"],load_cost_flatness,gen_SG_tariff)
 	trf=[10,10,7,16,12,10,4,3,15,10,12,10]
+	print o.eval_under_tariff(trf,plot_=False)
+	#plt.figure()
+	o = objective(["ts0.txt"],load_cost_flatness,gen_SG_tariff)
+	trf=[10,10,10,10,10,10,10,10,10,10,10,10]
 	print o.eval_under_tariff(trf,plot_=True)
 	
+	plt.show()
+	print "x"
 	#load = o.AS.get_load_m()
 	#tm=range(24*60)
 	#plt.figure()
@@ -481,6 +495,7 @@ class experiment():
 			print "kernel log lks after evaluation: "+str(self.G.llks)
 			print "----x----x----\n"
 			self.savetrace("defaulttrace.txt~")
+			plt.show()
 		return
 	def plotflatresponse(self):
 		y=self.o.flat_ref()

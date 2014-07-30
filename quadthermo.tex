@@ -53,7 +53,7 @@ There are to costs associated with a given control input. The actuation cost is 
 
 The quantity to be minimised is therefore
 \begin{equation}
-f = (\underline{T}-\underline{T}^s)^{T}\mathbf{Q}(\underline{T}-\underline{T}^s)+\underline{\Lambda}^{T} \underline{\delta}
+f = (\underline{T}-\underline{T}^s)^{T}\mathbf{Q}(\underline{T}-\underline{T}^s)+\underline{\Lambda}^{T} P\underline{\delta}
 \end{equation}
 Rather than having a very high dimensional $\underline{\delta}$ constrained to be either zero or one which is difficult to solve and very high dimensional we reduce the dimension of the input to $M$ by defining
 \begin{equation}
@@ -77,7 +77,7 @@ where
 \mathbf{R}=\mathbf{D}^{T}\mathbf{\Phi}^{T}\mathbf{Q}\mathbf{\Phi}\mathbf{D}
 \end{equation}
 \begin{equation}
-\underline{S}^{T}=2(\underline{\Psi}-\underline{T}^s)^{T}\mathbf{Q}\mathbf{\Phi}\mathbf{D}+\underline{\Lambda}^{T} \mathbf{D}
+\underline{S}^{T}=2(\underline{\Psi}-\underline{T}^s)^{T}\mathbf{Q}\mathbf{\Phi}\mathbf{D}+P\underline{\Lambda}^{T} \mathbf{D}
 \end{equation}
 \section{}
 There are many possible constraint sets to give desired behavior. The minimum required constraint is that the control signal must be between zero and one at all times
