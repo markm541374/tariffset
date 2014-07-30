@@ -5,8 +5,8 @@ from matplotlib import pyplot as plt
 from matplotlib import gridspec
 
 N=1000
-M=50
-J=20
+M=100
+J=10
 
 
 
@@ -61,11 +61,12 @@ for i in range(100,200):
 	K=sp.vstack([K,-e*Phi*D])
 	Y=sp.vstack([Y,-12+e*Psi])
 
-from cvxopt import matrix,solvers
-Q = 2*matrix(R)
-p = matrix(sp.array(St).ravel())
-G = matrix(K)
-h = matrix(sp.array(Y).ravel())
+from cvxopt import matrix as cm
+from cvxopt import solvers as cs
+Q = 2*cm(R)
+p = cm(sp.array(St).ravel())
+G = cm(K)
+h = cm(sp.array(Y).ravel())
 
 alpha = sp.matrix(sp.zeros([1,N]))
 for i in range(250,800):
@@ -74,9 +75,9 @@ A=alpha*Phi*D
 print A.shape
 b=sp.matrix(18*(800-250)*sp.ones([1,1]))-alpha*Psi
 
-A = matrix(A)
-b = matrix(b)
-sol=solvers.qp(Q, p, G, h,A,b)
+A = cm(A)
+b = cm(b)
+sol=cs.qp(Q, p, G, h,A,b)
 
 u=sp.matrix(sol['x'])
 T=Phi*D*u+Psi

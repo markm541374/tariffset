@@ -2,6 +2,7 @@
 
 import scipy as sp
 from scipy import random as spr
+from scipy import linalg as spl
 import numpy as sp
 from matplotlib import pyplot as plt
 import operator
@@ -12,8 +13,11 @@ from multiprocessing import Pool, Process, Pipe
 import os
 import GPGO
 import time
+from cvxopt import matrix as cm
+from cvxopt import solvers as cs
 
 os.system("taskset -p 0xff %d" % os.getpid())
+os.environ['OPENBLAS_NUM_THREADS']='1'
 
 #all times are in seconds
 
@@ -33,10 +37,9 @@ class agent:
 	def get_agentpara(self):
 		return #parameter vector that fully defines the agent
 
+
+
 #agent with a single fixed load that runs at a constant level for a fixed time
-
-
-
 class rect_SSL_agent(agent):
 	def __init__(self,para):
 		self.t0=para[0] #time the agent can start
@@ -65,6 +68,7 @@ class rect_SSL_agent(agent):
 		for i in range(self.ts/60,(self.ts+self.ld)/60):
 			lp[i]=self.lv
 		return lp
+
 	def evaluate_u(self,dt):
 		
 		#find the utility of a given deferal ####per munite accuracy
@@ -98,7 +102,10 @@ class rect_SSL_agent(agent):
 				best_dt=i*60
 		#print "best_c: "+str(best_c)+" best_dt: "+str(best_dt)
 		self.ts=self.t0+best_dt
-		return self.ts
+		return [self.ts]
+	def set_schedule_result(self,para):
+		self.ts=para[0]
+		return
 
 	def plotm(self):
 		T=[i/60. for i in range(0,24*60)]
@@ -110,8 +117,155 @@ class rect_SSL_agent(agent):
 		plt.figure()
 		plt.plot(T,u)
 		plt.plot(T,tar)
-		plt.show()
+		plt.draw()
 		return
+
+class quadthermo_agent(agent):
+	def __init__(self,para):
+		self.absmax=para[0]
+		self.absmin=para[1]
+		#activetimes is a list of blocks in which the heating is on. each element is [tstart,tstop,Ttarget,margin]
+		self.activetimes=para[2]
+		self.q=para[3]
+		#Text is a function accepting time (seconds) and returning temp
+		self.Textfn=lambda x:1
+		self.P=para[4]
+		self.cm=para[5]
+		self.k=para[6]
+		self.dt=1
+		return
+
+	def get_agentpara(self):
+		para = [self.absmax,self.absmin,self.activetimes,self.q,self.P,self.cm,self.k]
+		return para
+
+	def schedule(self):
+		
+		#number of minutes
+		N=24*60
+		#number of pwn periods
+		M=6*24
+		#minutes/pwm period
+		J=10
+		#Te is the vector of external temperatures
+		Te=sp.matrix(map(self.Textfn,range(N))).T
+		#Lambda is the vector of tariffs
+		Lambda = sp.matrix(map(self.T,[i*60 for i in range(N)])).T
+		#Q is the zero matrix with the cost of errors on the leading diagonal
+		Q=sp.matrix(sp.zeros([N,N]))
+		#Ts is the target temperature
+		Ts=sp.matrix(sp.zeros([N,1]))
+
+		
+		for onperiod in self.activetimes:
+			start=onperiod[0]
+			stop=onperiod[1]
+			Tt=onperiod[2]
+			for i in range(start,stop):
+				Ts[i,0]=Tt
+				Q[i,i]=self.q
+		
+				
+			
+		
+		U=sp.matrix(sp.vstack([sp.hstack([sp.zeros([1,N-1]),sp.ones([1,1])]),sp.hstack([sp.eye(N-1),sp.zeros([N-1,1])])]))
+		
+		PhiI = float(self.cm)/self.P * (sp.eye(N)-(1-self.dt*self.k/self.cm)*U)
+		
+		PhiLU = spl.lu_factor(PhiI)
+		
+		#Psi=self.cm/self.P*PhiI.I*(self.dt*self.k/self.cm*U*Te)
+		Psi=self.cm/self.P*spl.lu_solve(PhiLU, (self.dt*self.k/self.cm*U*Te))
+		
+		D = sp.kron(sp.eye(M),sp.ones([J,1]))
+		
+		PhiD = spl.lu_solve(PhiLU,D)
+		#PhiD = PhiI.I*D
+		R = PhiD.T*Q*PhiD
+		
+		St = 2*(Psi-Ts).T*Q*PhiD + Lambda.T*D
+		
+		K=sp.matrix(sp.vstack([sp.eye(M),-sp.eye(M),-PhiD,PhiD]))
+		Y=sp.matrix(sp.vstack([sp.ones([M,1]),sp.zeros([M,1]),-self.absmin*sp.ones([N,1])+Psi,self.absmax*sp.ones([N,1])-Psi]))
+		
+		for onperiod in self.activetimes:
+			start=onperiod[0]
+			stop=onperiod[1]
+			Tt=onperiod[2]
+			M=onperiod[3]
+			for i in range(start,stop):
+				e=sp.matrix(sp.zeros([N,1]))
+				e[i,0]=1
+				K=sp.vstack([K,-e.T*PhiD,e.T*PhiD])
+				Y=sp.vstack([Y,-sp.matrix(Tt-M)+e.T*Psi,sp.matrix(Tt+M)-e.T*Psi])
+		
+		Qd = 2*cm(R)
+		
+		p = cm(sp.array(St).ravel())
+		
+		G = cm(K)
+		
+		h = cm(sp.array(Y).ravel())
+		
+		sol=cs.qp(Qd, p, G, h)
+		
+		u=sp.matrix(sol['x'])
+		
+		Ti=PhiD*u+Psi
+		
+		self.Ti=Ti
+		self.Te=Te
+		self.Ts=Ts
+		delta=D*u
+		self.delta=delta
+		q=sp.diag(Q)
+		self.q=q
+		self.N=N
+		self.Lambda=Lambda
+		
+		return [Ti,Te,Ts,delta,q,N,Lambda]
+
+	def set_schedule_result(self,para):
+		self.Ti=para[0]
+		self.Te=para[1]
+		self.Ts=para[2]
+		self.delta=para[3]
+		self.q=para[4]
+		self.N=para[5]
+		self.Lambda=para[6]
+		return
+
+	def plotm(self):
+		plt.figure(figsize=(18,12))
+
+		ax0 = plt.subplot2grid((8,5),(0,0),rowspan=4,colspan=5)
+		ax0.set_ylabel("Temperature")
+		ax0.plot(sp.array(self.Ti))
+		ax0.plot(sp.array(self.Ts))
+		ax0.plot(sp.array(self.Te))
+		ax0.axis([0,self.N,0,22])
+
+		ax1 = plt.subplot2grid((8,5),(4,0),rowspan=1,colspan=5)
+		ax1.set_ylabel("Input")
+		ax1.plot(sp.array(self.delta))
+		ax1.axis([0,self.N,0,1])
+
+		ax2 = plt.subplot2grid((8,5),(5,0),rowspan=1,colspan=5)
+		ax2.set_ylabel("Tariff")
+		ax2.plot(sp.array(self.Lambda))
+		ax2.axis([0,self.N,0,40])
+
+		ax3 = plt.subplot2grid((8,5),(6,0),rowspan=1,colspan=5)
+		ax3.set_ylabel("CostWeight")
+		ax3.plot(sp.array(self.q))
+		ax3.axis([0,self.N,0,2])
+
+		plt.draw()
+		return
+
+	def get_load_m(self):
+		#P is watts so *60 for energy/minute
+		return self.P*60.*sp.ravel(self.delta.flatten())
 
 def multischedule(conn,agent):
 	ts = agent.schedule()
@@ -133,7 +287,11 @@ class agent_set():
 		self.A=[]
 		f=open(fname)
 		for line in f:
-			self.A.append(rect_SSL_agent(ast.literal_eval(line.strip('\n'))))
+			a=ast.literal_eval(line.strip('\n'))
+			if a[0]=="rect_SSL_agent":
+				self.A.append(rect_SSL_agent(a[1:]))
+			if a[0]=="quadthermo_agent":
+				self.A.append(quadthermo_agent(a[1:]))
 		return
 
 	def set_tariff(self,tariff):
@@ -148,10 +306,14 @@ class agent_set():
 			p = Process(target=multischedule, args=(cc,a,))
 			p.start()
 			Procs[i]=[p,pc]
+		
 		for i,a in enumerate(self.A):
-			ts = Procs[i][1].recv()
-			self.A[i].ts=ts
+			
+			ans = Procs[i][1].recv()
+			self.A[i].set_schedule_result(ans)
 			Procs[i][0].join()
+			#self.A[i].plotm()
+		
 		return 
 
 	def get_load_m(self):	
@@ -259,8 +421,8 @@ class objective():
 def main():
 	
 
-	o = objective(["ts0.txt","ts1.txt","ts2.txt"],load_cost_flatness,gen_SG_tariff)
-	trf=[1,4,1,1,2,1,1.5,1]
+	o = objective(["ts0.txt"],load_cost_flatness,gen_SG_tariff)
+	trf=[10,10,7,16,12,10,4,3,15,10,12,10]
 	print o.eval_under_tariff(trf,plot_=True)
 	
 	#load = o.AS.get_load_m()
@@ -329,6 +491,6 @@ class experiment():
 		y=self.objective(self.G.best[0])
 		print "bestresponse: "+str(y)
 		return
-#main()
-create()
+main()
+#create()
 
