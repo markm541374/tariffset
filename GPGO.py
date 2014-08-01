@@ -9,6 +9,7 @@ import DIRECT
 from functools import partial
 import time
 from multiprocessing import Pool
+
 os.system("taskset -p 0xff %d" % os.getpid())
 import copy
 

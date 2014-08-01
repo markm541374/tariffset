@@ -3,6 +3,7 @@
 import scipy as sp
 from scipy import random as spr
 from scipy import linalg as spl
+from scipy.interpolate import interp1d as spi1
 import numpy as sp
 from matplotlib import pyplot as plt
 import operator
@@ -208,9 +209,15 @@ class quadthermo_agent(agent):
 		p = cm(sp.array(St).ravel())
 		G = cm(K)
 		h = cm(sp.array(Y).ravel())
+		
+		f0=sys.stdout
+		f1=open(os.devnull,'w')
+		sys.stdout=f1
 
 		sol=cs.qp(Qd, p, G, h)
 		u=sp.matrix(sol['x'])
+
+		sys.stdout=f0
 		
 		Ti=PhiD*u+Psi
 
@@ -309,12 +316,12 @@ class agent_set():
 			Procs[i]=[p,pc]
 		time.sleep(4)
 		for i,a in enumerate(self.A):
-			print "recv"+str(i)
+			
 			ans = Procs[i][1].recv()
 			self.A[i].set_schedule_result(ans)
 			
 			Procs[i][0].join()
-			print "joined"+str(i)
+			
 			#self.A[i].plotm()
 		
 		return 
@@ -325,19 +332,7 @@ class agent_set():
 			load=map(operator.add,load,a.get_load_m())
 		return load
 
-def create_SSL_agents(fname):
-	f = open(fname,"w")
-	N=50
-	for i in range(N):
-		t0=int(min(3600*spr.gamma(6,1),23*3600)) #time the agent can start
-		tf=int(min(t0+3600*(1+spr.gamma(12,1)),24*3600)) #time the agent must finish by (s)
-		ld=3600 #time the agent runs for (s)
-		lv= 1.#value of the load when running
-		uf=0.1*spr.gamma(1,1)/3600. #utility gradient for deferal
-		a=rect_SSL_agent([t0,tf,ld,lv,uf])
-		f.write(str(a.get_agentpara())+'\n')
-	f.close()
-	return
+
 
 def load_cost_flatness(load):
 	#squared normalised difference from a flat load
@@ -346,8 +341,6 @@ def load_cost_flatness(load):
 	return err
 
 def gen_SG_tariff(theta):
-		
-		
 		#sum of gaussians spaced at support points
 		N=len(theta)
 		if N==1:
@@ -357,6 +350,14 @@ def gen_SG_tariff(theta):
 		tariff = lambda t:sum([theta[i]*sp.exp(-((t-spoints[i])**2)/float(2*(24*3600/float(N))**2)) for i in range(N)])
 		return tariff
 
+def gen_3interp_tariff(theta):
+	N=len(theta)
+	if N==1:
+		theta=sp.array(theta).ravel()
+		N=len(theta)
+	spoints = [i*24*3600/float(N-1) for i in range(N)]
+	f=spi1(spoints,theta)
+	return f
 
 class objective():
 	def __init__(self,afnames,loadcostfn,tariffgen):
@@ -375,13 +376,13 @@ class objective():
 		tariff=self.tariffgen(tariffpara)
 		cost=0.
 		loads=[]
-		print "0"
+		
 		for i in range(self.N):
 			self.ASs[i].set_tariff(tariff)
-		print "1"
+		
 		
 		map(agent_set.schedule,self.ASs)
-		print "2"
+		
 
 		for i in range(self.N):
 			load=self.ASs[i].get_load_m()
@@ -389,19 +390,18 @@ class objective():
 			cost+=self.loadcostfn(load)
 		cost=cost/float(self.N)
 		if plot_:
-			print "3"
+			
 			tm=range(24*60)
+			plt.figure(figsize=(18,12))
+			ax0 = plt.subplot2grid((8,5),(3,0),rowspan=1,colspan=5)
+			ax1 = plt.subplot2grid((8,5),(0,0),rowspan=3,colspan=5)
 
+			ax1.set_ylabel("Load")
+			ax0.set_ylabel("Tariff")
+			ax0.plot(tm,map(tariff,[j*60 for j in tm]))
 			for i in range(self.N):
-				plt.figure(figsize=(18,12))
-				ax0 = plt.subplot2grid((8,5),(3,0),rowspan=1,colspan=5)
-				ax0.plot(tm,map(tariff,[j*60 for j in tm]))
-				ax0.set_ylabel("Tariff")
-				
-				ax1 = plt.subplot2grid((8,5),(0,0),rowspan=3,colspan=5)
 				ax1.plot(tm,loads[i])
-				ax1.set_ylabel("Load")
-
+				
 			plt.draw()
 		
 		return cost
@@ -449,24 +449,18 @@ def main():
 	#plt.show()
 	
 	return
-def create():
-	create_SSL_agents("ts0.txt")
-	create_SSL_agents("ts1.txt")
-	create_SSL_agents("ts2.txt")
-	create_SSL_agents("ts3.txt")
-	create_SSL_agents("ts4.txt")
-	create_SSL_agents("ts5.txt")
-	return
+
 
 class experiment():
-	def __init__(self,kernels,ensemblefnames,upper,lower,dim):
+	def __init__(self,kernels,ensemblefnames,upper,lower,tariffgen):
 		self.kernels=kernels
 		self.ensemblefnames=ensemblefnames
 		self.upper=upper
 		self.lower=lower
-		self.dim=dim
-		self.o=objective(ensemblefnames,load_cost_flatness,gen_SG_tariff)
+		self.dim=len(upper)
+		self.o=objective(ensemblefnames,load_cost_flatness,tariffgen)
 		self.objective=lambda X:self.o.eval_under_tariff(X,plot_=True)
+		
 		self.G=GPGO.GPGO(self.kernels,self.objective,self.upper,self.lower,self.dim)
 		return
 
@@ -506,6 +500,5 @@ class experiment():
 		y=self.objective(self.G.best[0])
 		print "bestresponse: "+str(y)
 		return
-main()
-#create()
+
 
