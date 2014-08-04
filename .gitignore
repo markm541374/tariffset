@@ -1,6 +1,5 @@
 *.pyc
 *~
-.goutputstream-PQTZHX
-.ipynb_checkpoints/
+.*
 DIRresults.txt
 trace.txt

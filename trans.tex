@@ -1,0 +1,41 @@
+\documentclass[11pt]{article}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{\textbf{Transfer}}
+
+\author{Mark McLeod}
+\date{}
+\begin{document}
+
+\maketitle
+
+\section{Paper Section}
+\subsection{Problem outline}
+material from \url{https://github.com/markm541374/tariffset/blob/master/problem_spec.pdf}
+\subsection{Thermal agent maths}
+Analysis of the individual agent optimisation and QP solution.
+
+Material from \url{https://github.com/markm541374/tariffset/blob/master/quadthermo.pdf}
+\subsection{GPGO}
+Justification of using an expensive optimisation technique rather than standard ones.
+\subsection{Results}
+hopefully showing that the load responds to the tariff and that GPGO makes good reductions in the objective fn of the load.
+
+\section{Review/Proposal}
+
+\subsection{Review-optimisation}
+Surrogate surface techniques. GPs. different maximization options, EI, PI, Entropy. multistep lookahead.
+\subsection{Review-tariffsetting}
+Smartgrid overview. Other proposals for load management. This method is new because it both publishes ahead of time (giving agents time to plan ahead and b more flexible) and is not a direct exposure of market prices so is a proper control signal.
+
+\subsection{Proposal-model}
+Form a defensible model of a home using gov. surveys, power company stats, dissagregation datasets. Correlations between insulation/occupancy/location/weather/season/day-to-day.
+\subsection{Proposal-optimisation}
+Fast two-step lookahead \url{http://www.robots.ox.ac.uk./~markm/MSGPGO.pdf}
+
+Using previous result as information for next day, using true load each day to update the model.
+
+\end{document}

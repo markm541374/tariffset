@@ -340,6 +340,9 @@ def load_cost_flatness(load):
 	err = sum([((i-mean)/mean)**2 for i in load])/len(load)
 	return err
 
+def load_cost_absmax(load):
+	return max(load)
+
 def gen_SG_tariff(theta):
 		#sum of gaussians spaced at support points
 		N=len(theta)
@@ -356,7 +359,7 @@ def gen_3interp_tariff(theta):
 		theta=sp.array(theta).ravel()
 		N=len(theta)
 	spoints = [i*24*3600/float(N-1) for i in range(N)]
-	f=spi1(spoints,theta)
+	f=spi1(spoints,theta,kind='cubic')
 	return f
 
 class objective():
@@ -452,13 +455,13 @@ def main():
 
 
 class experiment():
-	def __init__(self,kernels,ensemblefnames,upper,lower,tariffgen):
+	def __init__(self,kernels,ensemblefnames,upper,lower,tariffgen,load_u_fn):
 		self.kernels=kernels
 		self.ensemblefnames=ensemblefnames
 		self.upper=upper
 		self.lower=lower
 		self.dim=len(upper)
-		self.o=objective(ensemblefnames,load_cost_flatness,tariffgen)
+		self.o=objective(ensemblefnames,load_u_fn,tariffgen)
 		self.objective=lambda X:self.o.eval_under_tariff(X,plot_=True)
 		
 		self.G=GPGO.GPGO(self.kernels,self.objective,self.upper,self.lower,self.dim)
