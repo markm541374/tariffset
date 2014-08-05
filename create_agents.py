@@ -24,23 +24,41 @@ def quadthermo_agent_gen():
 	r=sp.random.uniform()
 	nres=1
 	i=0
+	
 	while r>vec[i]:
 		r-=vec[i]
 		i+=1
-	nres=i+1
+	
 		
+	nres=i+1
+	
 	occ=active.get_occ_p(nres)
 	cons=[]
 	for p in occ:
 		p.extend([targetT,tolerance])
 		cons.append(p)
-	q=2.5
+	q=0.005 #magic number
+	
 	
 	fa=28.39+sp.random.gamma(shape=2.099,scale=28.696) #floor area from cabe dwelling survey
+	
+	flat=sp.random.uniform(0,1)<0.365 # flat or house
+	if flat:
+		U = 3.3*sp.sqrt(fa) #insulation in W/K floor area
+	else:
+		U= 3.6*sp.sqrt(fa)+0.14*fa
+	
+	
+	k=U #insulation in W/K
 
-	P=6.
-	cm=80.
-	k=0.2
+	cm=1000*sp.exp(sp.random.normal(5.5,0.35)) #thermal capacity in J
+	
+	P=sp.random.uniform(6000,15000)# power in W
+
+	Prequ=k*20
+	
+	if Prequ>P:
+		print "!!!!!!!!!!!"
 	s=str(["quadthermo_agent",absmax,absmin,cons,q,P,cm,k])
 	return s
 

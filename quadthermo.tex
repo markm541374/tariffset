@@ -1,5 +1,5 @@
 \documentclass[11pt]{article}
-
+\usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \DeclareMathOperator*{\argmin}{arg\,min}
@@ -26,14 +26,14 @@ T_{n+1} =  T_{n}-\frac{\Delta t k}{cm}(T_{n}-T_{n}^{e}) + \frac{\Delta t P \delt
 \end{equation}
 If the time period under consideration is discretized into $N$ periods of $\Delta t$ then $T, T^{e},\delta$ can be represented as column vectors of size $N$ and the update rule can be expressed as a matrix equation and simplified to give
 \begin{equation}
-\left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right) \underline{T} = \frac{\Delta t k}{cm}\mathbf{U}\underline{T}^{e}+\frac{P}{cm}\underline{\delta}
+\left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right) \underline{T} = \frac{\Delta t k}{cm}\mathbf{U}\underline{T}^{e}+\frac{\Delta t P}{cm}\underline{\delta}
 \end{equation}
 \begin{equation}
 \underline{T}=\mathbf{\Phi} \underline{\delta}+\underline{\Psi}
 \end{equation}
 where
 \begin{equation}
-\mathbf{\Phi}= \frac{P}{cm} \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1}
+\mathbf{\Phi}= \frac{\Delta t P}{cm} \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1}
 \end{equation}
 \begin{equation}
 \underline{\Psi}= \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1} \left( \frac{\Delta t k}{cm}\mathbf{U}\underline{T}^{e}\right)
@@ -135,4 +135,28 @@ Another potentially useful constraint is to specify a mean temperature over a ti
 \underline{\alpha}^{T} \mathbf{\Phi} \mathbf{D} \underline{u} = \|\underline{\alpha}\|_{0} T^{avg} -\underline{\alpha}^{T} \underline{\Psi}
 \end{equation}
 
+\section{}
+The numbers need to come from somewhere:
+
+\cite{richardson2008high} has produced a markov chain for the active occupancy of a building for a given number of occupants at ten minute resolution which is used to determine the times the temperature must be controlled.
+
+\cite{CABE} is a survey of various building statistics including floor area and occupancy number. The occupancy is drawn from a multinomial based on this  with occupancy greater than six rounded down to six since this is the highest number a markov chain is available for. Floor area is drawn from an offset gamma fitted to the CABE data. They type of building is also listed so it is decided that a Binomial classification as 0.365 of being a flat and 0.635 as a house (2 floors) is appropriate.
+
+\cite{SAP} provides low, medium, high values for thermal mass per sqm floor area of $100,250,400 kJ/m^{2}K$. This is used as the mean and stddev of a Gaussian in log-spaces so that $cm=10^{3}e^{x},\quad x:N(5.5,0.35)$.
+
+I decide that a floor is 3m high, $h=3$. Looking out the window I decide that a house has one fifth of its external walls as windows  while a flat has one half, but that a flat only has one half of its perimeter exposed while a house has the full perimeter and the ground and the roof with a slope of 30 degrees.
+
+Insulation values are given in $W/m^{2}K$ as 0.18 for external walls, 0.13 for floors and roofs, 1.4 for windows. Therefore the insulation value for a house related to internal area is
+
+\begin{equation}
+U=4h \sqrt{\frac{A}{2}}(\frac{4}{5}0.18 + \frac{1}{5}1.4) + \frac{A}{2}0.13+\frac{A}{2}\frac{2}{\sqrt{3}}0.13 = 3.6\sqrt{A}+0.14A
+\end{equation}
+while for a flat the relation is
+\begin{equation}
+U=4h \sqrt{\frac{A}{2}}\times 0.5(\frac{1}{2}1.4+\frac{1}{2}0.18)=3.3\sqrt{A}
+\end{equation}
+
+From the Google result for electric boilers I decide that power will be uniform distributed $(6,15)kW$.
+\bibliography{quadthermo.bib}{}
+\bibliographystyle{plain}
 \end{document}

@@ -150,7 +150,7 @@ class quadthermo_agent(agent):
 		self.P=para[4]
 		self.cm=para[5]
 		self.k=para[6]
-		self.dt=1
+		self.dt=60
 		return
 
 	def get_agentpara(self):
@@ -158,12 +158,12 @@ class quadthermo_agent(agent):
 		return para
 
 	def schedule(self):
-		#number of minutes
-		N=24*60
+		#number of thermal sim periods
+		N=24*60*60/self.dt
 		#number of pwn periods
-		M=6*24
-		#minutes/pwm period
-		J=10
+		M=2*6*24
+		#pwm/thermal period ratio
+		J=N/M
 		#Te is the vector of external temperatures
 		Te=sp.matrix(map(self.Textfn,range(N))).T
 		#Lambda is the vector of tariffs
@@ -183,13 +183,13 @@ class quadthermo_agent(agent):
 		
 		U=sp.matrix(sp.vstack([sp.hstack([sp.zeros([1,N-1]),sp.ones([1,1])]),sp.hstack([sp.eye(N-1),sp.zeros([N-1,1])])]))
 		
-		PhiI = float(self.cm)/self.P * (sp.eye(N)-(1-self.dt*self.k/self.cm)*U)
+		PhiI = float(self.cm)/(self.dt*self.P) * (sp.eye(N)-(1-self.dt*self.k/self.cm)*U)
 		PhiLU = spl.lu_factor(PhiI)
-		Psi=self.cm/self.P*spl.lu_solve(PhiLU, (self.dt*self.k/self.cm*U*Te))
+		Psi=self.cm*spl.lu_solve(PhiLU, (self.dt*self.k/self.cm*U*Te))/(self.P*self.dt)
 		D = sp.kron(sp.eye(M),sp.ones([J,1]))
 		PhiD = spl.lu_solve(PhiLU,D)
 		R = PhiD.T*Q*PhiD
-		St = 2*(Psi-Ts).T*Q*PhiD + self.P*Lambda.T*D
+		St = 2*(Psi-Ts).T*Q*PhiD + self.dt*self.P*Lambda.T*D
 		
 		K=sp.matrix(sp.vstack([sp.eye(M),-sp.eye(M),-PhiD,PhiD]))
 		Y=sp.matrix(sp.vstack([sp.ones([M,1]),sp.zeros([M,1]),-self.absmin*sp.ones([N,1])+Psi,self.absmax*sp.ones([N,1])-Psi]))
@@ -210,17 +210,18 @@ class quadthermo_agent(agent):
 		G = cm(K)
 		h = cm(sp.array(Y).ravel())
 		
-		f0=sys.stdout
-		f1=open(os.devnull,'w')
-		sys.stdout=f1
+		#f0=sys.stdout
+		#f1=open(os.devnull,'w')
+		#sys.stdout=f1
 
 		sol=cs.qp(Qd, p, G, h)
 		u=sp.matrix(sol['x'])
 
-		sys.stdout=f0
-		
+		#sys.stdout=f0
+		 
 		Ti=PhiD*u+Psi
-
+		print (Ti-Ts).T*Q*(Ti-Ts)
+		print self.dt*self.P*Lambda.T*D*u
 		self.Ti=Ti
 		self.Te=Te
 		self.Ts=Ts
@@ -260,8 +261,8 @@ class quadthermo_agent(agent):
 
 		ax2 = plt.subplot2grid((8,5),(5,0),rowspan=1,colspan=5)
 		ax2.set_ylabel("Tariff")
-		ax2.plot(sp.array(self.Lambda))
-		ax2.axis([0,self.N,0,40])
+		ax2.plot(sp.array(60*60*1000*self.Lambda))
+		ax2.axis([0,self.N,0,1])
 
 		ax3 = plt.subplot2grid((8,5),(6,0),rowspan=1,colspan=5)
 		ax3.set_ylabel("CostWeight")
@@ -345,12 +346,13 @@ def load_cost_absmax(load):
 
 def gen_SG_tariff(theta):
 		#sum of gaussians spaced at support points
+		#theta is pounds/khW output is pounds/Joule
 		N=len(theta)
 		if N==1:
 			theta=sp.array(theta).ravel()
 			N=len(theta)
 		spoints = [i*24*3600/float(N-1) for i in range(N)]
-		tariff = lambda t:sum([theta[i]*sp.exp(-((t-spoints[i])**2)/float(2*(24*3600/float(N))**2)) for i in range(N)])
+		tariff = lambda t:(1./(60.*60.*1000.))*sum([theta[i]*sp.exp(-((t-spoints[i])**2)/float(2*(24*3600/float(N))**2)) for i in range(N)])
 		return tariff
 
 def gen_3interp_tariff(theta):
@@ -358,7 +360,7 @@ def gen_3interp_tariff(theta):
 	if N==1:
 		theta=sp.array(theta).ravel()
 		N=len(theta)
-	spoints = [i*24*3600/float(N-1) for i in range(N)]
+	spoints = [(1./(60.*60.*1000.))*i*24*3600/float(N-1) for i in range(N)]
 	f=spi1(spoints,theta,kind='cubic')
 	return f
 
@@ -390,7 +392,7 @@ class objective():
 		for i in range(self.N):
 			load=self.ASs[i].get_load_m()
 			loads.append(load)
-			cost+=self.loadcostfn(load)
+			cost+=self.loadcostfn(load)	
 		cost=cost/float(self.N)
 		if plot_:
 			
@@ -433,12 +435,9 @@ class objective():
 def main():
 	
 	o = objective(["ts0.txt"],load_cost_flatness,gen_SG_tariff)
-	trf=[10,10,7,16,12,10,4,3,15,10,12,10]
+	trf=[0.10,0.10,0.07,0.16,0.12,0.10,0.04,0.03,0.15,0.10,0.12,0.10]
 	print o.eval_under_tariff(trf,plot_=False)
-	#plt.figure()
-	o = objective(["ts0.txt"],load_cost_flatness,gen_SG_tariff)
-	trf=[10,10,10,10,10,10,10,10,10,10,10,10]
-	print o.eval_under_tariff(trf,plot_=True)
+	o.ASs[0].A[0].plotm()
 	
 	plt.show()
 	print "x"
@@ -504,4 +503,4 @@ class experiment():
 		print "bestresponse: "+str(y)
 		return
 
-
+main()

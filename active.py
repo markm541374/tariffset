@@ -64,9 +64,10 @@ def runmc(n,we=0):
 	occ=[state]
 	for tstep in table:
 		vec=tstep[state]
-		r=sp.random.uniform()
+		
+		r=sp.random.uniform(0,1)
 		i=0
-		while r>vec[i]:
+		while i<7 and r>vec[i] :
 			r-=vec[i]
 			i+=1
 		state=i
