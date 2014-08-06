@@ -15,7 +15,7 @@ def rect_SSL_agent_gen():
 
 def quadthermo_agent_gen():
 	targetT=spr.normal(18,2)
-	tolerance=1.5
+	tolerance=2
 
 	absmax=max(spr.normal(21,1),targetT+tolerance) #no support
 	absmin=min(spr.gamma(4,1),targetT-tolerance) #no support
@@ -25,7 +25,7 @@ def quadthermo_agent_gen():
 	nres=1
 	i=0
 	
-	while r>vec[i]:
+	while i<7 and r>vec[i]:
 		r-=vec[i]
 		i+=1
 	
@@ -37,7 +37,7 @@ def quadthermo_agent_gen():
 	for p in occ:
 		p.extend([targetT,tolerance])
 		cons.append(p)
-	q=0.005 #magic number
+	q=sp.exp(sp.random.normal(-9.3,2.0))
 	
 	
 	fa=28.39+sp.random.gamma(shape=2.099,scale=28.696) #floor area from cabe dwelling survey
@@ -71,6 +71,6 @@ def writeagents(fname,nqth,nssl):
 	f.close()
 	return
 
-writeagents('ts0.txt',20,0)
-writeagents('ts1.txt',20,0)
-writeagents('ts2.txt',20,0)
+writeagents('ts0.txt',60,0)
+writeagents('ts1.txt',60,0)
+writeagents('ts2.txt',60,0)

@@ -67,7 +67,7 @@ def runmc(n,we=0):
 		
 		r=sp.random.uniform(0,1)
 		i=0
-		while i<7 and r>vec[i] :
+		while i<6 and r>vec[i] :
 			r-=vec[i]
 			i+=1
 		state=i

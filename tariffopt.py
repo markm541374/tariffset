@@ -161,7 +161,7 @@ class quadthermo_agent(agent):
 		#number of thermal sim periods
 		N=24*60*60/self.dt
 		#number of pwn periods
-		M=2*6*24
+		M=4*24
 		#pwm/thermal period ratio
 		J=N/M
 		#Te is the vector of external temperatures
@@ -189,7 +189,7 @@ class quadthermo_agent(agent):
 		D = sp.kron(sp.eye(M),sp.ones([J,1]))
 		PhiD = spl.lu_solve(PhiLU,D)
 		R = PhiD.T*Q*PhiD
-		St = 2*(Psi-Ts).T*Q*PhiD + self.dt*self.P*Lambda.T*D
+		St = 2*(Psi-Ts).T*Q*PhiD + self.P*Lambda.T*D
 		
 		K=sp.matrix(sp.vstack([sp.eye(M),-sp.eye(M),-PhiD,PhiD]))
 		Y=sp.matrix(sp.vstack([sp.ones([M,1]),sp.zeros([M,1]),-self.absmin*sp.ones([N,1])+Psi,self.absmax*sp.ones([N,1])-Psi]))
@@ -210,18 +210,18 @@ class quadthermo_agent(agent):
 		G = cm(K)
 		h = cm(sp.array(Y).ravel())
 		
-		#f0=sys.stdout
-		#f1=open(os.devnull,'w')
-		#sys.stdout=f1
+		f0=sys.stdout
+		f1=open(os.devnull,'w')
+		sys.stdout=f1
 
 		sol=cs.qp(Qd, p, G, h)
 		u=sp.matrix(sol['x'])
 
-		#sys.stdout=f0
+		sys.stdout=f0
 		 
 		Ti=PhiD*u+Psi
-		print (Ti-Ts).T*Q*(Ti-Ts)
-		print self.dt*self.P*Lambda.T*D*u
+		#print self.dt*(Ti-Ts).T*Q*(Ti-Ts)/self.q
+		#print self.dt*self.P*Lambda.T*D*u
 		self.Ti=Ti
 		self.Te=Te
 		self.Ts=Ts
@@ -335,7 +335,7 @@ class agent_set():
 
 
 
-def load_cost_flatness(load):
+def load_cost_sqflatness(load):
 	#squared normalised difference from a flat load
 	mean=sum(load)/float(len(load))
 	err = sum([((i-mean)/mean)**2 for i in load])/len(load)
@@ -343,6 +343,14 @@ def load_cost_flatness(load):
 
 def load_cost_absmax(load):
 	return max(load)
+
+def load_cost_abflatness(load):
+	mean=sum(load)/float(len(load))
+	err = sum([abs((i-mean)/mean) for i in load])/len(load)
+	return err
+
+def load_cost_ratio(load):
+	return max(load)/float(min(load))
 
 def gen_SG_tariff(theta):
 		#sum of gaussians spaced at support points
@@ -360,8 +368,8 @@ def gen_3interp_tariff(theta):
 	if N==1:
 		theta=sp.array(theta).ravel()
 		N=len(theta)
-	spoints = [(1./(60.*60.*1000.))*i*24*3600/float(N-1) for i in range(N)]
-	f=spi1(spoints,theta,kind='cubic')
+	spoints = [i*24*3600/float(N-1) for i in range(N)]
+	f=spi1(spoints,(1./(60.*60.*1000.))*theta,kind='cubic')
 	return f
 
 class objective():
@@ -392,7 +400,7 @@ class objective():
 		for i in range(self.N):
 			load=self.ASs[i].get_load_m()
 			loads.append(load)
-			cost+=self.loadcostfn(load)	
+			cost+=self.loadcostfn(load)
 		cost=cost/float(self.N)
 		if plot_:
 			
@@ -408,7 +416,33 @@ class objective():
 				ax1.plot(tm,loads[i])
 				
 			plt.draw()
-		
+		sqflatness_cost=0
+		abflatness_cost=0
+		absmax_cost=0
+		ratio_cost=0
+		for i in range(self.N):
+			load=self.ASs[i].get_load_m()
+			loads.append(load)
+			sqflatness_cost+=load_cost_sqflatness(load)
+			abflatness_cost+=load_cost_abflatness(load)
+			absmax_cost+=load_cost_absmax(load)
+			ratio_cost+=load_cost_ratio(load)
+		sqflatness_cost=sqflatness_cost/float(self.N)
+		abflatness_cost=abflatness_cost/float(self.N)
+		absmax_cost=absmax_cost/float(self.N)
+		ratio_cost=ratio_cost/float(self.N)
+		f0=open('spares/sqflatness.txt','a+')
+		f1=open('spares/abflatness.txt','a+')
+		f2=open('spares/absmax.txt','a+')
+		f3=open('spares/ratio.txt','a+')
+		f0.write('['+str(tariffpara)+','+str(sqflatness_cost)+']\n')	
+		f1.write('['+str(tariffpara)+','+str(abflatness_cost)+']\n')
+		f2.write('['+str(tariffpara)+','+str(absmax_cost)+']\n')
+		f3.write('['+str(tariffpara)+','+str(ratio_cost)+']\n')
+		f0.close()
+		f1.close()
+		f2.close()
+		f3.close()
 		return cost
 
 	def flat_ref(self):
@@ -434,13 +468,13 @@ class objective():
 
 def main():
 	
-	o = objective(["ts0.txt"],load_cost_flatness,gen_SG_tariff)
-	trf=[0.10,0.10,0.07,0.16,0.12,0.10,0.04,0.03,0.15,0.10,0.12,0.10]
-	print o.eval_under_tariff(trf,plot_=False)
+	o = objective(["ts0.txt"],load_cost_abflatness,gen_SG_tariff)
+	trf=[0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10]
+	o.eval_under_tariff(trf,plot_=False)
 	o.ASs[0].A[0].plotm()
 	
 	plt.show()
-	print "x"
+	#print "x"
 	#load = o.AS.get_load_m()
 	#tm=range(24*60)
 	#plt.figure()
@@ -502,5 +536,5 @@ class experiment():
 		y=self.objective(self.G.best[0])
 		print "bestresponse: "+str(y)
 		return
-
-main()
+if __name__=="__main__":
+	main()
