@@ -71,6 +71,6 @@ def writeagents(fname,nqth,nssl):
 	f.close()
 	return
 
-writeagents('ts0.txt',60,0)
-writeagents('ts1.txt',60,0)
-writeagents('ts2.txt',60,0)
+writeagents('ts0.txt',100,0)
+writeagents('ts1.txt',100,0)
+writeagents('ts2.txt',100,0)
