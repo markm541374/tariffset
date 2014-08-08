@@ -28,14 +28,35 @@ class GPGO():
         self.KyRs=[]
         self.llks=[]
         self.renorm=1.
+	self.cc=0
+	self.finished=False
+	self.fudgelimit=32
         return
     
     def findnext(self):
         if self.nsam==0:
             return 0.5*(sp.matrix(self.upper)+sp.matrix(self.lower))
-        
+	if self.finished:
+		raise StandardError("opt is finished")
+        self.cc=0
+	fudge=2.
         EIwrap= lambda x,y : (-self.evalWEI(sp.matrix(x)),0)
-        [x,EImin,ierror]=DIRECT.solve(EIwrap,self.lower,self.upper,user_data=[],algmethod=1,maxf=1500)
+        [x,EImin,ierror]=DIRECT.solve(EIwrap,self.lower,self.upper,user_data=[],algmethod=1,maxf=5000)
+	while self.cc==0 and fudge<=self.fudgelimit:
+		print "non nonzero eis found over full range. trying closer to current min with lengthfactor: "+str(fudge)	
+		u=sp.matrix(self.upper)
+		l=sp.matrix(self.lower)
+		dia=u-l
+		lw=sp.maximum(l,self.best[0]-dia/fudge)
+		up=sp.minimum(u,self.best[0]+dia/fudge)
+		[x,EImin,ierror]=DIRECT.solve(EIwrap,lw,up,user_data=[],algmethod=1,maxf=5000)
+		fudge*=2.
+		print self.cc
+	if self.cc=0:
+		print "done. no nonzero EIs"
+		self.finished=True
+		return [self.best[0],0.]
+	print "EI: "+str(EImin)
         return [sp.matrix(x),-EImin]
     
    
@@ -202,9 +223,13 @@ class GPGO():
     
     def EI(self,ER,mu,sigma):
         alpha=(-ER+mu)/sigma
+	
         Z=norm.cdf(-alpha)
+	
         if Z==0.0:
             return sp.matrix(0.0)
+	#print "alpha: "+str(alpha)
+	#print "Z: "+str(Z)
         E=-mu+norm.pdf(alpha)*sigma/Z+ER
         EI=Z*E
         if np.isfinite(EI):
@@ -215,13 +240,19 @@ class GPGO():
     def evalWEI(self,x):
         n=len(self.KFs)
         j=map(self.evalWEIi,range(n),[x]*n)
+        r=sum(j)/self.renorm
+        if r>0.:
+		self.cc+=1
         
-            
-        
-        return sum(j)/self.renorm
+        return r
             
     def evalWEIi(self,i,x):
-        return sp.exp(self.llks[i])*self.evalEI(self.X,self.Y,self.KyRs[i],self.KFs[i],self.best[1],x)[0]
+	
+	e=self.evalEI(self.X,self.Y,self.KyRs[i],self.KFs[i],self.best[1],x)[0]
+	l=sp.exp(self.llks[i])
+	#if e>0.:
+	#	print str(l)+"   "+str(e)
+        return l*e
         
     def evalEI(self,X,Y,KyR,kf,best,x):
         
@@ -229,8 +260,12 @@ class GPGO():
         Ksy = self.buildKasym(kf,X,sp.matrix(x))
         tmp = spl.cho_solve(KyR,Ksy).T
         m=tmp*Y
+	
         C=Kss-tmp*Ksy
+	
         E=self.EI(best,m[0,0],C[0,0])
+	#if E>0.:
+	#	print "m: "+str(m)+" c: "+str(C)+" b: "+str(best)
         return (E,m[0,0],C[0,0])
     
     def evalPY(self,x,y):
