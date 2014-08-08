@@ -52,7 +52,7 @@ class GPGO():
 		[x,EImin,ierror]=DIRECT.solve(EIwrap,lw,up,user_data=[],algmethod=1,maxf=5000)
 		fudge*=2.
 		print self.cc
-	if self.cc=0:
+	if self.cc==0:
 		print "done. no nonzero EIs"
 		self.finished=True
 		return [self.best[0],0.]
