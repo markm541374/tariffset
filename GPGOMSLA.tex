@@ -1,0 +1,202 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\title{\textbf{Gaussian Process Global Optimisation with Multistep Lookahead
+}}
+\author{}
+\date{}
+\begin{document}
+
+\maketitle
+
+
+
+\section{}
+
+The aim is to find the minimising argument of the objective function
+
+\begin{equation}
+x_{min}=\argmin_{x}f(x)\qquad\mathbf{\mathit{x}}\in\mathbb{R^{\mathit{m}}},\quad f:\mathbb{R^{\mathit{m}}}\rightarrow\mathbb{R}
+\end{equation}
+
+Since the objective function is expensive to evaluate we wish to make as few evaluations as possible. To determine which point to evaluate next we make inference about the objective function by approximating it as a Gaussin process with some mean and kernel function.
+\begin{equation}
+f \sim \mathcal{GP}(m,k)
+\end{equation}
+
+Given a set of points that have already been evaluated
+\begin{equation}
+X	=\left[x_{i}\right]
+\end{equation}
+\begin{equation}
+F	=\left[f\left(x_{i}\right)\right]
+\end{equation}
+
+A belief is induced over the value of $f_{s}$ at $x_{s}$
+\begin{equation}
+ f_{s}\mid F,X\sim\mathcal{N}\left( \langle f_{s}\rangle ,\mathrm{var}(f_{s})\right)
+\end{equation} 
+
+where
+\begin{equation}
+\langle f_{s}\rangle 	=K_{sx}K_{xx}^{-1}F
+\end{equation}
+\begin{equation}
+\mathrm{var}\left(f_{s}\right)	=K_{ss}-K_{sx} K_{xx}^{-1} K_{sx}^{T}
+\end{equation}
+\begin{equation}
+K_{ss}	=K\left(X,X\right)
+\end{equation}
+\begin{equation}
+K_{sx}	=K\left(F,X\right)
+\end{equation}
+\begin{equation}
+K_{xx}	=K\left(F,F\right)
+\end{equation}
+\begin{equation}
+K\left(A,B\right)	=\left[k(a_{i},b_{j})\right]
+\end{equation} 
+
+Given a set of n  observations $X_{n},F_{n}$ the current best is 
+\begin{equation}
+f_{n}^{opt}=\min_{i}F_{n}\left[i\right]
+\end{equation} 
+
+located at
+\begin{equation}
+x_{n}^{opt}=x_{\argmin_{i}F_{n}\left[i\right]}
+\end{equation}
+
+If a new evaluation $f_{n+1}$ is made the improvement is
+\begin{equation}
+\lambda_{n\rightarrow n+1}\left(f_{n+1}\mid X_{n},F_{n}\right)=\max\left(0,f_{n}^{opt}-f_{n+1}\right)
+\end{equation} 
+
+The expected improvement at $x_{n+1}$
+ before the evaluation is made is
+ 
+\begin{equation}
+\begin{split}
+\left\langle \lambda_{n\rightarrow n+1}\left(x_{n+1}\mid X_{n},F_{n}\right)\right\rangle 	& =\intop_{-\infty}^{\infty}\lambda_{1}\left(f_{s}\mid X_{n},F_{n}\right)p\left(f_{n+1}\mid X_{n},F_{n},x_{n+1}\right)\mathrm{d}f_{n+1} \\
+	&=\intop_{-\infty}^{f_{n}^{opt}}\left(f_{n}^{opt}-f_{n+1}\right)p\left(f_{n+1}\mid X_{n},F_{n},x_{n+1}\right)\mathrm{d}f_{n+1}\\
+	&=integral(linear*gaussian)\\
+\end{split}
+\end{equation} 
+
+To the location to evaluate next given $ X_{n},F_{n}$  to maximise the expectation of improvement in the observed minimum looking one step ahead is therefore
+\begin{equation}
+x^{\mathcal{EI}^{1}}\mid X_{n},F_{n}=\argmax_{x_{s}}\left\langle \lambda_{n\rightarrow n+1}\left(x_{s}\mid X_{n},F_{n}\right)\right\rangle 
+\end{equation}
+
+\section{}
+To look further ahead given $X_{n},F_{n}$  we can postulate the result of the next evaluation $\widehat{x}_{n+1}
+  , \widehat{f}_{n+1}$
+ . Which occurs with probability
+\begin{equation}
+p\left(\widehat{f}_{n+1}\mid\widehat{x}_{n+1},X_{n},F_{n}\right)=\mathcal{N}\left(mean:K_{sx}K_{xx}^{-1}F,variance:K_{ss}-K_{sx}K_{xx}^{-1}K_{sx}^{T}\right)
+\end{equation}
+
+We define 
+\begin{equation}
+\widehat{X}_{n+1}	=\begin{bmatrix}X_{n} & \widehat{x}_{n+1}\end{bmatrix}
+\end{equation}
+\begin{equation}
+\widehat{F}_{n+1}	=\begin{bmatrix}F_{n} & \widehat{f}_{n+1}\end{bmatrix}
+\end{equation}
+\begin{equation}
+\widehat{f}_{n+1}^{opt}	=\min\left(\widehat{f}_{n+1},f_{n}^{opt}\right)
+\end{equation}
+\begin{equation}
+\widehat{\lambda}_{n\rightarrow n+1}	=\max\left(0,f_{n}^{opt}-\widehat{f}_{n+1}\right)
+\end{equation}
+
+Given $\widehat{X}_{n+1},\widehat{F}_{n+1}$  the improvement from $n+1$ to $n+2$is
+
+\begin{equation}\lambda_{n+1\rightarrow n+2}\left(\widehat{x}_{n+2}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)=\max\left(0,\widehat{f}_{n+1}^{opt}-f_{n+2}\right)
+\end{equation}
+
+and has expectation
+
+\begin{equation}
+\left\langle \lambda_{n+1\rightarrow n+2}\left(\widehat{x}_{n+2}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)\right\rangle =\intop_{-\infty}^{\infty}\lambda_{n+1\rightarrow n+2}\left(f_{n+2}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)p\left(f_{n+2}\mid\widehat{X}_{n+1},\widehat{F}_{n+1},\widehat{x}_{n+2}\right)\mathrm{d}f_{n+2}
+\end{equation}
+
+which is an analytic integral. For maximum expected improvement $\widehat{x}_{n+2}$ is located at
+  
+
+\begin{equation}
+\begin{split}
+\widehat{x}_{n+2}	&=\argmax_{x_{s}}\left\langle \lambda_{n+1\rightarrow n+2}\left(x_{s}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)\right\rangle \\
+	&=x^{\mathcal{EI}^{1}}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\\
+\end{split}
+\end{equation}
+
+The two step expected improvement is therefore
+
+\begin{equation}
+\lambda_{n\rightarrow n+2}\left(x_{n+1}\mid X_{n},F_{n}\right)=\intop_{-\infty}^{\infty}\left[\widehat{\lambda}_{n\rightarrow n+1}+\left\langle \lambda_{n+1\rightarrow n+2}\left(x^{\mathcal{EI}^{1}}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)\right\rangle \right]p\left(\widehat{f}_{n+1}\mid X_{n},F_{n},x_{n+1}\right)\mathrm{d}\widehat{f}_{n+1}
+\end{equation}
+
+And is found at
+
+\begin{equation}
+x^{\mathcal{EI}^{2}}\mid X_{n},F_{n}=\argmax_{x_{s}}\lambda_{n\rightarrow n+2}\left(x_{s}\mid X_{n},F_{n}\right)
+\end{equation}
+
+\section{}
+
+The above formulae are not analytic so cannot be directly evaluated. Furthermore the Gaussian process usually has hyperparameters which should be integrated over in evaluating the expected improvement. That is if the GP is
+\begin{equation}
+f\sim\mathcal{GP}\left(m,k\left(\theta\right)\right)
+\end{equation}
+ 
+
+then the expected improvement at $x_{n+1}$  given $X_{n},F_{n}$ is 
+  \begin{equation}
+  \left\langle \lambda_{n\rightarrow n+1}\left(x_{n+1}\mid X_{n},F_{n}\right)\right\rangle =\intop_{-\infty}^{\infty}\intop_{-\infty}^{f_{n}^{opt}}\left(f_{n}^{opt}-f_{n+1}\right)p\left(f_{n+1}\mid X_{n},F_{n},x_{n+1},\theta\right)\mathrm{d}f_{n+1}\: p(\theta\mid X_{n},F_{n})\mathrm{d}\theta
+\end{equation}
+
+where
+\begin{equation}
+(\theta\mid X_{n},F_{n})=\frac{p(F_{n}\mid\theta,X_{n})p\left(\theta\right)}{\int p(F_{n}\mid\theta,X_{n})p\left(\theta\right)\mathrm{d}\theta}
+\end{equation}
+
+$p\left(\theta\right)$ is the prior on the hyperparameters and $p(F_{n}\mid\theta,X_{n})$  is the likelihood given by
+\begin{equation}
+\log\left(p(F_{n}\mid\theta,X_{n})\right)=-\frac{1}{2}F^{T}K_{xx}^{-1}F-\frac{1}{2}\log\left|K_{xx}\right|-\frac{n}{2}\log\left(2\pi\right)
+\end{equation}
+ 
+
+This is not a simple integral so is implemented as a numerical integral using a set of samples of possible hyperparameters $\Theta$
+ 
+\begin{equation}
+\left\langle \lambda_{n\rightarrow n+1}\left(x_{n+1}\mid X_{n},F_{n}\right)\right\rangle =\sum_{\theta\in\Theta}\:\intop_{-\infty}^{f_{n}^{opt}}\left(f_{n}^{opt}-f_{n+1}\right)p\left(f_{n+1}\mid X_{n},F_{n},x_{n+1},\theta\right)\mathrm{d}f_{n+1}p(\theta\mid X_{n},F_{n})
+\end{equation}
+ 
+\begin{equation}
+p(\theta\mid X_{n},F_{n})=\frac{p(F_{n}\mid\theta,X_{n})p\left(\theta\right)}{\sum_{\theta\in\Theta}p(F_{n}\mid\theta,X_{n})p\left(\theta\right)}
+\end{equation}
+
+Or a more complex method such as Bayesian MC can be used, giving a weighted sum, but the basis in a set of $\theta \in \Theta$  remains the same.
+
+Furthermore since the 1 step improvement is numerically evaluated then the integral over it used in the two step formula must also be numerical. That is formula[eq:ff] becomes
+\begin{equation}
+\lambda_{n\rightarrow n+2}\left(x_{n+1}\mid X_{n},F_{n}\right)=\sum_{\widehat{f}_{n+1}\in H}\left[\widehat{\lambda}_{n\rightarrow n+1}+\left\langle \lambda_{n+1\rightarrow n+2}\left(x^{\mathcal{EI}^{1}}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}\right)\right\rangle \right]p\left(\widehat{f}_{n+1}\mid X_{n},F_{n},x_{n+1}\right)\mathrm{d}\widehat{f}_{n+1}
+\end{equation}
+ 
+
+Or a weighted sum as before.
+
+The arxmax evaluation in both the one and two step formulae can be implemented by any global search function. We use DIRECT for the one step search defined in equation [eq:EI1def], however since the argument of the two step search in Equation [eq:EI2def] is complex, involving multiple levels of numerical integration, a one step GPGO is used so that the maximum can be found with a minimum number of evaluations.
+
+\section{}
+In the two step routine, for a given $\theta$ , and for a given $\widehat{x}_{n+1}$
+ the $x^{\mathcal{EI}^{1}}\mid\widehat{X}_{n+1},\widehat{F}_{n+1}$  location must be found for all $\widehat{f}_{n+1}\in H$.
+This involves computing $\left\langle f_{n+2}\mid\widehat{f}_{n+1}\right\rangle ,\mathrm{var}\left(f_{n+2}\mid\widehat{f}_{n+1}\right)$  at all the $\widehat{x}_{n+2}$
+  locations on the search path for every $\widehat{f}_{n+1}\in H$
+  and using them in calculation of the expected improvement. 
+
+\end{document}
