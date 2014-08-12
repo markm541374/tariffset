@@ -1,6 +1,7 @@
 import scipy as sp
 from scipy.stats import norm as norm
 import scipy.linalg as spl
+import numpy.linalg as npl #slogdet isn't in spl
 import numpy as np
 from matplotlib import pyplot as plt
 import sys
@@ -14,8 +15,10 @@ os.system("taskset -p 0xff %d" % os.getpid())
 import copy
 
 class GPGO():
-    def __init__(self,KFs,optF,upper,lower,dim):
-        self.KFs=KFs
+    def __init__(self,KF_gen,KF_init,optF,upper,lower,dim):
+	self.KF_gen=KF_gen
+	self.KF_hyp=KF_init
+        self.KFs=[KF_gen(self.KF_hyp)]
         self.optF=optF
         self.upper=upper
         self.lower=lower
@@ -41,7 +44,7 @@ class GPGO():
         self.cc=0
 	fudge=2.
         EIwrap= lambda x,y : (-self.evalWEI(sp.matrix(x)),0)
-        [x,EImin,ierror]=DIRECT.solve(EIwrap,self.lower,self.upper,user_data=[],algmethod=1,maxf=5000)
+        [x,EImin,ierror]=DIRECT.solve(EIwrap,self.lower,self.upper,user_data=[],algmethod=1,maxf=4000)
 	while self.cc==0 and fudge<=self.fudgelimit:
 		print "non nonzero eis found over full range. trying closer to current min with lengthfactor: "+str(fudge)	
 		u=sp.matrix(self.upper)
@@ -49,14 +52,14 @@ class GPGO():
 		dia=u-l
 		lw=sp.maximum(l,self.best[0]-dia/fudge)
 		up=sp.minimum(u,self.best[0]+dia/fudge)
-		[x,EImin,ierror]=DIRECT.solve(EIwrap,lw,up,user_data=[],algmethod=1,maxf=5000)
+		[x,EImin,ierror]=DIRECT.solve(EIwrap,lw,up,user_data=[],algmethod=1,maxf=4000)
 		fudge*=2.
-		print self.cc
+		print "nonzero EIs: " +str(self.cc)
 	if self.cc==0:
 		print "done. no nonzero EIs"
 		self.finished=True
 		return [self.best[0],0.]
-	print "EI: "+str(EImin)
+	print "EI: "+str(-EImin)
         return [sp.matrix(x),-EImin]
     
    
@@ -76,10 +79,10 @@ class GPGO():
             tmp=self.buildKsym(kf,self.X)
             self.Ky.append(tmp)
             self.KyRs.append(spl.cho_factor(tmp))
-            self.llks.append((-self.Y.T*tmp*self.Y-0.5*sp.log(spl.det(tmp))-0.5*self.nsam*sp.log(2*sp.pi))[0,0])
+            self.llks.append(self.eval_kernel_llk(kf))
         self.renorm=sum(map(sp.exp,self.llks))
 	if self.renorm==0.:
-		raise ValueError("renorm=0.0")
+		pass#raise ValueError("renorm=0.0")
         return delta
     
     def evaluate(self,x):
@@ -96,14 +99,17 @@ class GPGO():
             tmp=self.buildKsym(kf,self.X)
             self.Ky.append(tmp)
             self.KyRs.append(spl.cho_factor(tmp))
-            self.llks.append((-self.Y.T*tmp*self.Y-0.5*sp.log(spl.det(tmp))-0.5*self.nsam*sp.log(2*sp.pi))[0,0])
+            self.llks.append(self.eval_kernel_llk(kf))
         self.renorm=sum(map(sp.exp,self.llks))
 	if self.renorm==0.:
 		raise ValueError("renorm=0.0")
         return y
+
     def eval_kernel_llk(self,kf):
-	tmp=self.buildKsym(kf,self.X)
-	llk= (-self.Y.T*tmp*self.Y-0.5*sp.log(spl.det(tmp))-0.5*self.nsam*sp.log(2*sp.pi))[0,0]
+	K=self.buildKsym(kf,self.X)
+    	K_lu=spl.cho_factor(K)
+    	Ki_Y=spl.cho_solve(K_lu,self.Y)
+    	llk= (-self.Y.T*Ki_Y-0.5*npl.slogdet(K)[1]-0.5*self.Y.shape[0]*sp.log(2*sp.pi))[0,0]
 	return llk
 
     def plotstate1D(self,llimit,ulimit,allK=False):
@@ -277,7 +283,32 @@ class GPGO():
             p+=lki*sp.exp(-((mi-y)**2)/Ci)*(1/(sp.sqrt(Ci*2*sp.pi)))
            
         return p/self.renorm
-    
+
+    def plot_hyper(self):
+	r=30
+	xaxis=sp.linspace(-2,2,r)
+	yaxis=sp.linspace(-2,2,r)
+	C=[]
+	Cp=[]
+	for x in xaxis:
+		print x
+		for y in yaxis:
+			kf=self.KF_gen([1.,sp.exp(x),sp.exp(y)])
+			l=self.eval_kernel_llk(kf)
+			C.append(10*l)
+			Cp.append(sp.exp(l+(-((x/3.)**2+(y/3.)**2))))
+	Cgrid=sp.vstack(np.split(np.array(C),r))
+	Cpgrid=sp.vstack(np.split(np.array(Cp),r))
+	plt.contour(xaxis,yaxis,Cgrid,r)
+	plt.figure()
+	plt.contour(xaxis,yaxis,Cpgrid,r)
+	return
+
+    def search_hyper(self):
+	Fwrap= lambda  x,y: (-self.eval_kernel_llk(self.KF_gen(map(lambda t:10**t,x))),0)
+	[loghyp,Fmin,ierror]=DIRECT.solve(Fwrap,[-2,-2,-2],[2,2,2],user_data=[],algmethod=1,maxf=2000)
+        return [map(lambda x:10**x,loghyp),-Fmin]
+
     def predictY(self,x):
         res=[]
         for i in range(len(self.KFs)):
@@ -295,3 +326,32 @@ class GPGO():
         for i in e:
             self.forceAddPoint(i[0:-1],i[-1])
         return
+
+    def stepn(self,n):
+	for i in range(n):
+		print "----x----x----\nstep "+str(i+1)+" of "+str(n)+"\n"
+		t0=time.time()
+		print "searching for best eval location"
+		l=self.findnext()[0]
+		t1=time.time()
+		print "searchtime = "+str(t1-t0)
+    		print "Found optimum: " + str(l)
+		print "evaluating..."
+		y=self.evaluate(l)
+		t2=time.time()
+		print "evaluated as "+str(y)
+		print "current best "+str(self.best[1])
+		print "evaluation time = "+str(t2-t1)
+		
+		print "searching for mle hyperparameters..."
+		[h,l]=self.search_hyper()
+		t3=time.time()
+		print "searchtime = "+str(t3-t2)
+		print "hyperparameters before search: "+str(self.KF_hyp)
+		print "llk before search: "+str(self.llks)
+		print "mle hyperparameters: "+str(h)
+		print "mle llk: "+str(l)
+		print "----x----x----\n"
+		self.savetrace("defaulttrace.txt~")
+		plt.show()
+	return

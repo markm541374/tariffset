@@ -486,6 +486,27 @@ def main():
 	
 	return
 
+class testopt():
+	def __init__(self,kf_gen,kf_init,o,upper,lower):
+		
+		self.objective=o
+		self.upper=upper
+		self.lower=lower
+		self.dim=len(upper)
+		self.G=GPGO.GPGO(kf_gen,kf_init,self.objective,self.upper,self.lower,self.dim)
+		return
+
+	def loadtrace(self,fname):
+		self.G.loadtrace(fname)
+		return
+
+	def savetrace(self,fname):
+		self.G.savetrace(fname)
+		return
+
+	def stepn(self,n):
+		self.G.stepn(n)
+		return
 
 class experiment():
 	def __init__(self,kernels,ensemblefnames,upper,lower,tariffgen,load_u_fn):
@@ -509,24 +530,9 @@ class experiment():
 		return
 
 	def stepn(self,n):
-		for i in range(n):
-			print "----x----x----\nstep "+str(i+1)+" of "+str(n)+"\n"
-			t0=time.time()
-			print "searching for best eval location"
-			l=self.G.findnext()[0]
-			t1=time.time()
-			print "searchtime = "+str(t1-t0)
-    			print "Found optimum: " + str(l)
-			print "evaluating..."
-			y=self.G.evaluate(l)
-			t2=time.time()
-			print "evaluated as "+str(y)
-			print "evaluation time = "+str(t2-t1)
-			print "kernel log lks after evaluation: "+str(self.G.llks)
-			print "----x----x----\n"
-			self.savetrace("defaulttrace.txt~")
-			plt.show()
+		self.G.stepn(n)
 		return
+
 	def plotflatresponse(self):
 		y=self.o.flat_ref()
 		print "flatresponse: "+str(y)
