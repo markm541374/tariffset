@@ -22,8 +22,6 @@ def buildKsym(kf,x):
 
 def gen(kf,upper,lower,r=25):
 
-
-	
 	X=sp.matrix(sp.ndarray([0,2]))
 
 	xv=sp.linspace(lower[0],upper[0],r)

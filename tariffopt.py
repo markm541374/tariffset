@@ -487,13 +487,13 @@ def main():
 	return
 
 class testopt():
-	def __init__(self,kf_gen,kf_init,o,upper,lower):
+	def __init__(self,kf_gen,kf_init,kf_prior,o,upper,lower):
 		
 		self.objective=o
 		self.upper=upper
 		self.lower=lower
 		self.dim=len(upper)
-		self.G=GPGO.GPGO(kf_gen,kf_init,self.objective,self.upper,self.lower,self.dim)
+		self.G=GPGO.GPGO(kf_gen,kf_init,kf_prior,self.objective,self.upper,self.lower,self.dim)
 		return
 
 	def loadtrace(self,fname):
@@ -505,12 +505,12 @@ class testopt():
 		return
 
 	def stepn(self,n):
-		self.G.stepn(n)
-		return
+		best=self.G.stepn(n)
+		return best
 
 class experiment():
-	def __init__(self,kernels,ensemblefnames,upper,lower,tariffgen,load_u_fn):
-		self.kernels=kernels
+	def __init__(self,kf_gen,kf_init,kf_prior,ensemblefnames,upper,lower,tariffgen,load_u_fn):
+		
 		self.ensemblefnames=ensemblefnames
 		self.upper=upper
 		self.lower=lower
@@ -518,7 +518,7 @@ class experiment():
 		self.o=objective(ensemblefnames,load_u_fn,tariffgen)
 		self.objective=lambda X:self.o.eval_under_tariff(X,plot_=True)
 		
-		self.G=GPGO.GPGO(self.kernels,self.objective,self.upper,self.lower,self.dim)
+		self.G=GPGO.GPGO(kf_gen,kf_init,kf_prior,self.objective,self.upper,self.lower,self.dim)
 		return
 
 	def loadtrace(self,fname):

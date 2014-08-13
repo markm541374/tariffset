@@ -15,9 +15,10 @@ os.system("taskset -p 0xff %d" % os.getpid())
 import copy
 
 class GPGO():
-    def __init__(self,KF_gen,KF_init,optF,upper,lower,dim):
+    def __init__(self,KF_gen,KF_init,KF_prior,optF,upper,lower,dim):
 	self.KF_gen=KF_gen
 	self.KF_hyp=KF_init
+	self.KF_prior=KF_prior
         self.KFs=[KF_gen(self.KF_hyp)]
         self.optF=optF
         self.upper=upper
@@ -38,7 +39,7 @@ class GPGO():
     
     def findnext(self):
         if self.nsam==0:
-            return 0.5*(sp.matrix(self.upper)+sp.matrix(self.lower))
+            return [0.5*(sp.matrix(self.upper)+sp.matrix(self.lower)),0]
 	if self.finished:
 		raise StandardError("opt is finished")
         self.cc=0
@@ -58,9 +59,10 @@ class GPGO():
 	if self.cc==0:
 		print "done. no nonzero EIs"
 		self.finished=True
+		#raise StandardError("opt is finished")
 		return [self.best[0],0.]
-	print "EI: "+str(-EImin)
-        return [sp.matrix(x),-EImin]
+	
+        return sp.matrix(x),-EImin
     
    
     def forceAddPoint(self,x,y):
@@ -303,10 +305,24 @@ class GPGO():
 	plt.figure()
 	plt.contour(xaxis,yaxis,Cpgrid,r)
 	return
+    def eval_kernel_ap(self,kf_para):
+	pr=1
+	for i,x in enumerate(kf_para):
+		[mu,std]=self.KF_prior[i]
+		p=norm.pdf(x,loc=mu,scale=std)
+		pr*=p
+	llk=self.eval_kernel_llk(self.KF_gen(map(lambda x:10**x,kf_para)))
+	kf_log_post=llk+sp.log(pr)
+	return kf_log_post
 
     def search_hyper(self):
-	Fwrap= lambda  x,y: (-self.eval_kernel_llk(self.KF_gen(map(lambda t:10**t,x))),0)
-	[loghyp,Fmin,ierror]=DIRECT.solve(Fwrap,[-2,-2,-2],[2,2,2],user_data=[],algmethod=1,maxf=2000)
+	Fwrap= lambda  x,y: (-self.eval_kernel_ap(x),0)
+	upper=[]
+	lower=[]
+	for i in self.KF_prior:
+		upper.append(i[0]+3*i[1])
+		lower.append(i[0]-3*i[1])
+	[loghyp,Fmin,ierror]=DIRECT.solve(Fwrap,lower,upper,user_data=[],algmethod=1,maxf=2000)
         return [map(lambda x:10**x,loghyp),-Fmin]
 
     def predictY(self,x):
@@ -331,27 +347,43 @@ class GPGO():
 	for i in range(n):
 		print "----x----x----\nstep "+str(i+1)+" of "+str(n)+"\n"
 		t0=time.time()
-		print "searching for best eval location"
-		l=self.findnext()[0]
+		print "Searching for best eval location..."
+		[x,ei]=self.findnext()
 		t1=time.time()
 		print "searchtime = "+str(t1-t0)
-    		print "Found optimum: " + str(l)
-		print "evaluating..."
-		y=self.evaluate(l)
+    		print "Found optimum: " + str(x)
+		print "EI at optimum: " + str(-ei)
+		print "---"
+		print "Evaluating new point"
+		print "current best: "+str(self.best[1])
+		print "evaluating at EImax..."
+		y=self.evaluate(x)
 		t2=time.time()
-		print "evaluated as "+str(y)
-		print "current best "+str(self.best[1])
 		print "evaluation time = "+str(t2-t1)
-		
-		print "searching for mle hyperparameters..."
+		print "evaluated as "+str(y)
+		print "---"
+		print "Reopt hyperparameters"
+		print "hyperparameters before search: "+str(self.KF_hyp)
+		print "lap before search: "+str(self.eval_kernel_ap(map(sp.log10,self.KF_hyp)))
+		print "searching for map hyperparameters..."
 		[h,l]=self.search_hyper()
 		t3=time.time()
 		print "searchtime = "+str(t3-t2)
-		print "hyperparameters before search: "+str(self.KF_hyp)
-		print "llk before search: "+str(self.llks)
-		print "mle hyperparameters: "+str(h)
-		print "mle llk: "+str(l)
+		
+		print "map hyperparameters: "+str(h)
+		print "lmap : "+str(l)
+		self.KF_hyp=h
+
 		print "----x----x----\n"
 		self.savetrace("defaulttrace.txt~")
 		plt.show()
-	return
+		if self.finished:
+			break
+	print "\nxxxx-xxxx-xxxx\n"
+	if self.finished:
+		print "terminated after "+str(i+1)+" evaluations"
+	else:
+		print "scheduled end after "+str(i+1)+" evaluations"
+	print "min: "+str(self.best[1])
+	print "argmin: "+str(self.best[0])
+	return self.best
