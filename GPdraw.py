@@ -29,8 +29,8 @@ def gen(kf,upper,lower,r=25):
 	xv=sp.linspace(lower[0],upper[0],r)
 	yv=sp.linspace(lower[1],upper[1],r)
 
-	for x in xv:
-    		for y in yv:
+	for y in yv:
+    		for x in xv:
         
         		p=sp.matrix([[x,y]])
         		X=sp.vstack([X,p])
