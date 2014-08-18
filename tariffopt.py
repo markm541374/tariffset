@@ -363,6 +363,23 @@ def gen_SG_tariff(theta):
 		tariff = lambda t:(1./(60.*60.*1000.))*sum([theta[i]*sp.exp(-((t-spoints[i])**2)/float(2*(24*3600/float(N))**2)) for i in range(N)])
 		return tariff
 
+def gen_3interp_meancon_tariff(theta):
+	
+	N=len(theta)
+	
+	
+	if N==1:
+		theta=sp.array(theta).ravel()
+		N=len(theta)
+	s=sum(theta)
+	av=s/float(N)
+	off=0.12-av
+	theta=sp.array(map(lambda x:x+off, theta))
+	
+	spoints = [i*24*3600/float(N-1) for i in range(N)]
+	f=spi1(spoints,(1./(60.*60.*1000.))*theta,kind='cubic')
+	return f
+
 def gen_3interp_tariff(theta):
 	N=len(theta)
 	if N==1:
@@ -411,7 +428,8 @@ class objective():
 
 			ax1.set_ylabel("Load")
 			ax0.set_ylabel("Tariff")
-			ax0.plot(tm,map(tariff,[j*60 for j in tm]))
+			ax0.plot(tm,map(lambda x:360000000*tariff(x),[j*60 for j in tm]))
+			ax0.axis([0,1600,0,50])
 			for i in range(self.N):
 				ax1.plot(tm,loads[i])
 				
@@ -516,7 +534,7 @@ class experiment():
 		self.lower=lower
 		self.dim=len(upper)
 		self.o=objective(ensemblefnames,load_u_fn,tariffgen)
-		self.objective=lambda X:self.o.eval_under_tariff(X,plot_=True)
+		self.objective=lambda X:self.o.eval_under_tariff(X,plot_=False)
 		
 		self.G=GPGO.GPGO(kf_gen,kf_init,kf_prior,self.objective,self.upper,self.lower,self.dim)
 		return
@@ -528,7 +546,9 @@ class experiment():
 	def savetrace(self,fname):
 		self.G.savetrace(fname)
 		return
-
+	def savehyptrace(self,fname):
+		self.G.savehyptrace(fname)
+		return
 	def stepn(self,n):
 		self.G.stepn(n)
 		return

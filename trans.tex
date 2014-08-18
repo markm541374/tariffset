@@ -1,35 +1,76 @@
-\documentclass[11pt]{article}
+\documentclass[a4paper, 10 pt, conference]{ieeeconf}  % Comment this line out
+                                                          % if you need a4paper
+%\documentclass[a4paper, 10pt, conference]{ieeeconf}      % Use this line for a4
+                                                          % paper
+
+\IEEEoverridecommandlockouts                              % This command is only
+                                                          % needed if you want to
+                                                          % use the \thanks command
+\overrideIEEEmargins
+% See the \addtolength command later in the file to balance the column lengths
+% on the last page of the document
+
+
+
+% The following packages can be found on http:\\www.ctan.org
+\usepackage{graphics} % for pdf, bitmapped graphics files
+\usepackage{epsfig} % for postscript graphics files
+\usepackage{mathptmx} % assumes new font selection scheme installed
+\usepackage{times} % assumes new font selection scheme installed
+\usepackage{amsmath} % assumes amsmath package installed
+\usepackage{amssymb}  % assumes amsmath package installed
+\usepackage{epstopdf}
+
 \usepackage{hyperref}
-\usepackage{amsmath}
-\usepackage{amssymb}
+
 \DeclareMathOperator*{\argmin}{arg\,min}
 
-\title{\textbf{Transfer}}
+\title{\LARGE \bf Transfer}
 
 \author{Mark McLeod}
 \date{}
 \begin{document}
-
 \maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
 
 \section{Paper Section}
 \subsection{Problem outline}
-material from \url{https://github.com/markm541374/tariffset/blob/master/problem_spec.pdf}
+%material from \url{https://github.com/markm541374/tariffset/blob/master/problem_spec.pdf}
+Preamble about government energy targets, carbon, orchid, and the impending rise of the smart grid.
+
+Short overview of electricity generation and distribution that motivates influencing the shape of the daily load profile.
+
+The aim of this work is to develop a method for setting time varying tariffs in a way that allows the shape of the load profile due to domestic space heating to be controlled.
+
+\subsection{The home model}
+To form a realistic model of the response to variation in tariff a realistic model of the home is required. \cite{ramchurn2011agent} divides domestic loads into these that are and are not possible to influence. The later are devices that are used directly by the residents such as lighting, cooking and entertainment, the former devices such as washing machines, refrigerators and heaters. This category is further split into shiftable static load, those that could start at a selection of times but once started will run a fixed profile, and thermal loads. A model for thermal loads is developed and it is these devices that are the focus of this paper. In 2012 $77.6 TWh$ of electricity was used for domestic purposes, of which $16.5 TWh$ was used for space heating \cite{ecuk_data} so thermal loads represent a significant fraction of electricity use.
+
+Thermostats are getting more intelligent, internet pricing publishing has already been proposed. RT pricing has laready been proposed. Advance publishing allows the thermostats to plan ahead and has already been proposed, but as market price not as control signal. cite adaptivehome
+
 \subsection{Thermal agent maths}
 Analysis of the individual agent optimisation and QP solution.
 
 Material from \url{https://github.com/markm541374/tariffset/blob/master/quadthermo.pdf}
+
+Basic spec of the quadratic comfort cost and exponential cooling is a citation of \cite{ramchurn2011agent}. Add a few more constraints, remove the asymettry, make it cyclical to avoid initial conditions. Expectation of PWM rather than direct on-off input.
+
+Constants. Markov model for occupancy, survey for floor area. Nominal SAP values for insulation. A few magic constants.
+
+
 \subsection{GPGO}
+V short specification of GP and GPGO.
 Justification of using an expensive optimisation technique rather than standard ones.
 \subsection{Results}
-hopefully showing that the load responds to the tariff and that GPGO makes good reductions in the objective fn of the load.
+hopefully showing that the load responds to the tariff and that GPGO makes good reductions in the objective fn of the load. Show that agents have reduced their daily fee while still fulfilling constraints so are better of under the scheme.
 
 \section{Review/Proposal}
 
 \subsection{Review-optimisation}
 Surrogate surface techniques. GPs. different maximization options, EI, PI, Entropy. multistep lookahead.
 \subsection{Review-tariffsetting}
-Smartgrid overview. Other proposals for load management. This method is new because it both publishes ahead of time (giving agents time to plan ahead and b more flexible) and is not a direct exposure of market prices so is a proper control signal.
+Smartgrid overview. Other proposals for load management. This method is new because it both publishes ahead of time (giving agents time to plan ahead and b more flexible) and is not a direct exposure of market prices so is a proper control signal. some use carbon value, not realy very good.
 
 \subsection{Proposal-model}
 Form a defensible model of a home using gov. surveys, power company stats, dissagregation datasets. Correlations between insulation/occupancy/location/weather/season/day-to-day.
@@ -38,4 +79,6 @@ Fast two-step lookahead \url{http://www.robots.ox.ac.uk./~markm/MSGPGO.pdf}
 
 Using previous result as information for next day, using true load each day to update the model.
 
+\bibliography{trans.bib}{}
+\bibliographystyle{plain}
 \end{document}

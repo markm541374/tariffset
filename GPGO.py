@@ -35,6 +35,7 @@ class GPGO():
 	self.cc=0
 	self.finished=False
 	self.fudgelimit=32
+	self.hyp_trace=sp.matrix(KF_init)
         return
     
     def findnext(self):
@@ -336,7 +337,11 @@ class GPGO():
     def savetrace(self,fname):
         sp.savetxt(fname,sp.hstack([self.X,self.Y]))
         return
-    
+
+    def savehyptrace(self,fname):
+        sp.savetxt(fname,self.hyp_trace)
+        return
+
     def loadtrace(self,fname):
         e=sp.loadtxt(fname)
         for i in e:
@@ -344,8 +349,9 @@ class GPGO():
         return
 
     def stepn(self,n):
+	t_00=time.time()
 	for i in range(n):
-		print "----x----x----\nstep "+str(i+1)+" of "+str(n)+"\n"
+		print "----x----x----\n----x----x----\nstep "+str(i+1)+" of "+str(n)+"\n"
 		t0=time.time()
 		print "Searching for best eval location..."
 		[x,ei]=self.findnext()
@@ -373,10 +379,13 @@ class GPGO():
 		print "map hyperparameters: "+str(h)
 		print "lmap : "+str(l)
 		self.KF_hyp=h
-
-		print "----x----x----\n"
+		self.hyp_trace=sp.vstack([self.hyp_trace,h])
+		print "running time so far: "+str(time.time()-t_00)
+		print "----x----x----\n----x----x----\n"
 		self.savetrace("defaulttrace.txt~")
+		self.savehyptrace("defaulthyptrace.txt~")
 		plt.show()
+		
 		if self.finished:
 			break
 	print "\nxxxx-xxxx-xxxx\n"
