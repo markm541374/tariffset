@@ -386,8 +386,11 @@ def gen_3interp_tariff(theta):
 		theta=sp.array(theta).ravel()
 		N=len(theta)
 	spoints = [i*24*3600/float(N-1) for i in range(N)]
-	f=spi1(spoints,(1./(60.*60.*1000.))*theta,kind='cubic')
-	return f
+	f=spi1(spoints,(1./(60.*60.*1000.))*sp.array(theta),kind='cubic')	
+	a0=0.4*(1./(60.*60.*1000.))
+	a1=0.05*(1./(60.*60.*1000.))
+	g=lambda x:min(a0,max(a1,f(x)))
+	return g
 
 class objective():
 	def __init__(self,afnames,loadcostfn,tariffgen):
@@ -525,7 +528,9 @@ class testopt():
 	def stepn(self,n):
 		best=self.G.stepn(n)
 		return best
-
+	def search(self,n):
+		best=self.G.search(n)
+		return best
 class experiment():
 	def __init__(self,kf_gen,kf_init,kf_prior,ensemblefnames,upper,lower,tariffgen,load_u_fn):
 		
@@ -552,7 +557,9 @@ class experiment():
 	def stepn(self,n):
 		self.G.stepn(n)
 		return
-
+	def search(self,n):
+		self.G.search(n)
+		return
 	def plotflatresponse(self):
 		y=self.o.flat_ref()
 		print "flatresponse: "+str(y)

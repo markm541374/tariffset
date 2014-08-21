@@ -36,6 +36,7 @@ class GPGO():
 	self.finished=False
 	self.fudgelimit=32
 	self.hyp_trace=sp.matrix(KF_init)
+	
         return
     
     def findnext(self):
@@ -59,6 +60,7 @@ class GPGO():
 		print "nonzero EIs: " +str(self.cc)
 	if self.cc==0:
 		print "done. no nonzero EIs"
+		
 		self.finished=True
 		#raise StandardError("opt is finished")
 		return [self.best[0],0.]
@@ -348,7 +350,70 @@ class GPGO():
             self.forceAddPoint(i[0:-1],i[-1])
         return
 
-    def stepn(self,n):
+    def search(self,n,init=12):
+	t_00=time.time()
+	for i in range(n):
+		print "----x----x----\n----x----x----\nstep "+str(i+1)+" of "+str(n)+"\n"
+		if i==0:
+			
+			x=0.5*(sp.matrix(self.upper)+sp.matrix(self.lower))
+			t1=time.time()
+			print "init with center "+str(x)
+		elif i<init:
+			x=sp.matrix(sp.zeros([1,self.dim]))
+			for j in range(self.dim):
+				x[0,j]=sp.random.uniform(self.lower[j],self.upper[j])
+			print "random eval loaction "+ str(x)
+			t1=time.time()
+		else:
+			t0=time.time()
+			print "Searching for best eval location..."
+			[x,ei]=self.findnext()
+			t1=time.time()
+			print "searchtime = "+str(t1-t0)
+    			print "Found optimum: " + str(x)
+			print "EI at optimum: " + str(-ei)
+		print "---"
+		print "Evaluating new point"
+		print "current best: "+str(self.best[1])
+		print "evaluating at EImax..."
+		y=self.evaluate(x)
+		t2=time.time()
+		print "evaluation time = "+str(t2-t1)
+		print "evaluated as "+str(y)
+		if i==init-1 or (i>init and i<80 and i%10==0) or (i>=80 and i%15==0):
+			print "---"
+			print "Reopt hyperparameters"
+			print "hyperparameters before search: "+str(self.KF_hyp)
+			print "lap before search: "+str(self.eval_kernel_ap(map(sp.log10,self.KF_hyp)))
+			print "searching for map hyperparameters..."
+			[h,l]=self.search_hyper()
+			t3=time.time()
+			print "searchtime = "+str(t3-t2)
+		
+			print "map hyperparameters: "+str(h)
+			print "lmap : "+str(l)
+			self.KF_hyp=h
+			self.hyp_trace=sp.vstack([self.hyp_trace,h])
+		print "running time so far: "+str(time.time()-t_00)
+		print "----x----x----\n----x----x----\n"
+		self.savetrace("defaulttrace.txt~")
+		self.savehyptrace("defaulthyptrace.txt~")
+		plt.show()
+		
+		if self.finished:
+			break
+	print "\nxxxx-xxxx-xxxx\n"
+	if self.finished:
+		print "terminated after "+str(i+1)+" evaluations"
+	else:
+		print "scheduled end after "+str(i+1)+" evaluations"
+	print "min: "+str(self.best[1])
+	print "argmin: "+str(self.best[0])
+	return self.best
+		
+	
+    def stepn(self,n,h_opt=False):
 	t_00=time.time()
 	for i in range(n):
 		print "----x----x----\n----x----x----\nstep "+str(i+1)+" of "+str(n)+"\n"
@@ -367,19 +432,20 @@ class GPGO():
 		t2=time.time()
 		print "evaluation time = "+str(t2-t1)
 		print "evaluated as "+str(y)
-		print "---"
-		print "Reopt hyperparameters"
-		print "hyperparameters before search: "+str(self.KF_hyp)
-		print "lap before search: "+str(self.eval_kernel_ap(map(sp.log10,self.KF_hyp)))
-		print "searching for map hyperparameters..."
-		[h,l]=self.search_hyper()
-		t3=time.time()
-		print "searchtime = "+str(t3-t2)
+		if h_opt:
+			print "---"
+			print "Reopt hyperparameters"
+			print "hyperparameters before search: "+str(self.KF_hyp)
+			print "lap before search: "+str(self.eval_kernel_ap(map(sp.log10,self.KF_hyp)))
+			print "searching for map hyperparameters..."
+			[h,l]=self.search_hyper()
+			t3=time.time()
+			print "searchtime = "+str(t3-t2)
 		
-		print "map hyperparameters: "+str(h)
-		print "lmap : "+str(l)
-		self.KF_hyp=h
-		self.hyp_trace=sp.vstack([self.hyp_trace,h])
+			print "map hyperparameters: "+str(h)
+			print "lmap : "+str(l)
+			self.KF_hyp=h
+			self.hyp_trace=sp.vstack([self.hyp_trace,h])
 		print "running time so far: "+str(time.time()-t_00)
 		print "----x----x----\n----x----x----\n"
 		self.savetrace("defaulttrace.txt~")

@@ -20,6 +20,7 @@
 \usepackage{amsmath} % assumes amsmath package installed
 \usepackage{amssymb}  % assumes amsmath package installed
 \usepackage{epstopdf}
+\usepackage{setspace}
 
 \usepackage{hyperref}
 
@@ -34,7 +35,7 @@
 \thispagestyle{empty}
 \pagestyle{empty}
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Paper Section}
 \subsection{Problem outline}
 %material from \url{https://github.com/markm541374/tariffset/blob/master/problem_spec.pdf}
@@ -43,42 +44,194 @@ Preamble about government energy targets, carbon, orchid, and the impending rise
 Short overview of electricity generation and distribution that motivates influencing the shape of the daily load profile.
 
 The aim of this work is to develop a method for setting time varying tariffs in a way that allows the shape of the load profile due to domestic space heating to be controlled.
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{the problem}
+In this work we consider an electricity supplier with a set of customers $c \in C$. Each of these customers has a load $l_{c}(t)$  so that the load to be met by the supplier is
+\begin{equation}
+L(t) = \sum_{c \in C} l_{c}(t)
+\end{equation}
+There exists some utility functional for production $U_{p}(L(t))$ which specifies how much it costs the producer to supply this power. $U$ will be based on the sources of power available to the supplier, and the market prices at which it must sell excess and buy shortfall.
+Each consumer is charged at a rate which we allow to be a function of time $\lambda (t)$. The balance of payments for the supplier is therefore
+\begin{equation}
+\Delta = \int_{T}L(t) \lambda(t) \mathrm{d}t - U_{p}(L(t))
+\end{equation}
+and the supplier naturally wishes to choose $\lambda$ to maximize profit (subject to constraints such as not being so high that consumers will choose to use other supplies). To simplify the mathematics for this work we assume that the tariff will balance the component of $U$ which is due to the average power consumption, so are only concerned with the shape of $L$ rather than its absolute value. The following results use the integral of absolute difference from the mean power, but other options are of course available and are discussed in section REF.
+Further, the load is divided by end use into load that is and is not controllable via $\Lambda$ and only that component which is controllable is considered.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{The home model}
-To form a realistic model of the response to variation in tariff a realistic model of the home is required. \cite{ramchurn2011agent} divides domestic loads into these that are and are not possible to influence. The later are devices that are used directly by the residents such as lighting, cooking and entertainment, the former devices such as washing machines, refrigerators and heaters. This category is further split into shiftable static load, those that could start at a selection of times but once started will run a fixed profile, and thermal loads. A model for thermal loads is developed and it is these devices that are the focus of this paper. In 2012 $77.6 TWh$ of electricity was used for domestic purposes, of which $16.5 TWh$ was used for space heating \cite{ecuk_data} so thermal loads represent a significant fraction of electricity use.
+To form a realistic model of the response to variation in tariff a realistic model of the home is required. \cite{ramchurn2011agent} divides domestic loads into these that are and are not suitable candidates for influence via pricing. The later are devices that are used directly by the residents such as lighting, cooking and entertainment, the former devices such as washing machines, refrigerators and heaters. This category is further split into shiftable static load (those that could start at a selection of times but once started will run a fixed profile) and thermal loads. A model for thermal loads is developed and it is these devices that are the focus of this paper. In 2012 $77.6 TWh$ of electricity was used for domestic purposes, of which $16.5 TWh$ was used for space heating \cite{ecuk_data} so thermal loads represent a significant fraction of electricity use. They also have the advantage over other devices that they are likely to be always on as a background process, and are already the subject of research to produce more intelligent versions \cite{rogers2011adaptive} \cite{ramchurn2013agentswitch} with some currently available models having features such as individual room control \cite{honeywell}, highly configurable schedules \cite{nest} and occupancy detection \cite{tado}
+
+Multiple studies have 
 
 Thermostats are getting more intelligent, internet pricing publishing has already been proposed. RT pricing has laready been proposed. Advance publishing allows the thermostats to plan ahead and has already been proposed, but as market price not as control signal. cite adaptivehome
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Thermal agent maths}
+
+The smart thermostat model presented here is based on the model proposed in and in that it uses a quadratic utility cost for deviation from a target temperature during times when the thermostat is active and sums this with the cost of the power used to form the objective function. The most notable difference is that rather than requiring the heating to be either on or off the heating control is allowed to be any value between zero and one. This assumes a pulse width modulation scheme is present in the controller so that the control input multiplied by the heating system power gives the expectation of load, rather than the true load. By doing this the duration of each control period can be increased, and so the number of degrees of freedom is reduced leading to a reduced computation time. It is also assumed here that the temperature cycle is periodic over 24 hours, this removes the initial value from the problem.
+
+A simple exponential cooling model is used, the home is defined by a thermal mass, $cm$, and insulation value, $\frac{1}{k}$, and a heater power $P$ If the external temperature is $T^{e}(t)$ then the temperature is governed by the first order differential equation
+\begin{equation}
+\frac{dT(t)}{dt} = -\frac{k}{cm}(T(t)-T^{e}(t)) +\frac{P\delta(t)}{cm}
+\end{equation}
+where $\delta(t) \in (0,1)$ determines the power setting of the heater. For a sufficiently small timestep $\Delta t$  this can be approximated as an update rule
+\begin{equation}
+T_{n+1} =  T_{n}-\frac{\Delta t k}{cm}(T_{n}-T_{n}^{e}) + \frac{\Delta t P \delta_{n}}{cm} 
+\end{equation}
+If the time period under consideration is discretized into $N$ periods of $\Delta t$ then $T, T^{e},\delta$ can be represented as column vectors of size $N$ and the update rule can be expressed as a matrix equation
+\begin{equation}
+\left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right) \underline{T} = \frac{\Delta t k}{cm}\mathbf{U}\underline{T}^{e}+\frac{\Delta t P}{cm}\underline{\delta}
+\end{equation}
+which is an affine relation between temperature and input that can be expressed as
+
+\begin{equation}
+\underline{T}=\mathbf{\Phi} \underline{\delta}+\underline{\Psi}
+\end{equation}
+where
+\begin{equation}
+\mathbf{\Phi}= \frac{\Delta t P}{cm} \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1}
+\end{equation}
+\begin{equation}
+\underline{\Psi}= \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1} \left( \frac{\Delta t k}{cm}\mathbf{U}\underline{T}^{e}\right)
+\end{equation}
+and
+\begin{equation}
+\mathbf{U} = \left[
+\begin{array}{c|c}
+\underline{0}_{1\times N} & 1 \\ \hline
+\mathbf{I}_{N} & \underline{0}_{N \times 1}
+\end{array}\right]
+\end{equation}
+
+The quantity that the home controller needs to minimise is the sum of the cost of deviation from the target temperature profile $\underline{T}^s$ and the cost of heating. The temperature deviation is only relevant when the home is occupied. This is encoded in the matrix $\mathbf{Q}=q \times diag(\underline{o})$ where $\underline{o}$ is a vector of size $N$ with ones in positions where the home is occupied and zeros otherwise and $q$ is a scalar that relates the utility of temperature deviation to monetary cost. The cost of heating is given by $P\underline{\Lambda}^{T} \underline{\delta}$ where $\underline{\Lambda}=[ \lambda ]$ is the vector of size $N$ giving the unit cost of electricity over time. This gives an objective function
+
+\begin{equation}
+f = (\underline{T}-\underline{T}^s)^{T}\mathbf{Q}(\underline{T}-\underline{T}^s)+P\underline{\Lambda}^{T} \underline{\delta}
+\end{equation}
+
+So that the dimensionality of the problem can be reduced to a lower number than that defined by the resolution of the temperature update equation $\underline{\delta}$ is defined to be
+\begin{equation}
+\underline{\delta}=\mathbf{D}\underline{u}
+\end{equation}
+where $\underline{u}$ is the $M$ dimensional column vector that will be optimised over and $D$ is the $M\times N$ matrix
+\begin{equation}
+\mathbf{D}=\mathbf{I}_{M} \otimes \underline{1}_{J \times 1},\qquad N=MJ
+\end{equation}.
+
+Making these substitutions leads to the new objective function
+\begin{equation}
+f'=\underline{u}^{T}\mathbf{R}\underline{u}+\underline{S}^{T}\underline{u}
+\end{equation}
+which differs from the original objective by a constant and where
+\begin{equation}
+\mathbf{R}=\mathbf{D}^{T}\mathbf{\Phi}^{T}\mathbf{Q}\mathbf{\Phi}\mathbf{D}
+\end{equation}
+and
+\begin{equation}
+\underline{S}^{T}=2(\underline{\Psi}-\underline{T}^s)^{T}\mathbf{Q}\mathbf{\Phi}\mathbf{D}+P\underline{\Lambda}^{T} \mathbf{D}
+\end{equation}
+
+The only constraints strictly required are those that constrain the heater input to be set between zero and one. 
+\begin{equation}
+0 \leq \delta_{n} \leq 1 \qquad \forall n
+\end{equation}
+These are expressed in standard form as
+\begin{equation}
+\left[
+\begin{array}{c}
+\mathbf{I}_{M} \\ \hline
+- \mathbf{I}_{M} 
+\end{array}\right]\underline{u} \leq \left[\begin{array}{c}
+\underline{1}_{M \times 1} \\ \hline
+\underline{0}_{M \times 1}
+\end{array}\right]
+\end{equation}
+In the following results further constraints are also placed on the absolute maximum and minimum temperature over all time, and that the temperature may not deviate by more than two degrees from the target temperature.
+
+This specifies the procedure an individual smart thermostat will undertake to form an optimum heating plan. To model the response of the full set of customers multiple agents are created using a generative process to determine individual parameters and the sum of their load is used. That is is a single thermal agent from the set of agents in the ensemble $a \in A$ is characterized by a vector $\theta_{a}$ and the optimization process that produces a load profile $\underline{l}$ given a tariff profile $\underline{\Lambda}$ is denoted
+\begin{equation}
+\underline{l}=h(\underline{\Lambda} \mid \theta)
+\end{equation}
+then the load $\underline{L}$ produced by the entire ensemble of agents is
+\begin{equation}
+\underline{L}(\underline{\Lambda}) = \sum_{a \in A} h(\underline{\Lambda} \mid \theta_{a})
+\end{equation}
+To provide an suitable target for optimization the load profile vector must be mapped to a scalar that conveys the utility to the supplier of that load. For the following results the objective used is the normalized integral of the deviation from the mean load.
+\begin{equation}
+U(\underline{L})=\sum_{t=0}^{N} \frac{\left| \underline{L}[t]-\langle L \rangle \right|}{\langle L \rangle}
+\end{equation}
+Various other possibilities are discussed in REF.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{thermal agent generative process}
+In order for the model to provide useful information it must have similar characteristics to the true demand system.
+
+An occupancy profile is generated for each thermal agent according to the model proposed in \cite{richardson2008high} which proposes a Markov chain generative model based on survey data. The model provides transition matrices for the number of active occupants in a building every ten minutes throughout the day, with separate chains for buildings with between one and six occupants. The number of occupants to use is drawn from a discrete distribution according to the data in the CABE dwelling size survey \cite{CABE}.
+For the thermal parameters of the home the floor area is drawn from an offset gamma distribution chosen to match the floor area results found by the CABE survey. Nominal values are used to convert floor area to surface area and from these values to derive insulation and thermal mass values which are drawn from log-normal distributions based on the nominal values given in The Government’s Standard Assessment Procedure for Energy Rating of Dwellings \cite{SAP}. Future improvements to this procedure are discussed in section REF
+
 Analysis of the individual agent optimisation and QP solution.
 
 Material from \url{https://github.com/markm541374/tariffset/blob/master/quadthermo.pdf}
 
-Basic spec of the quadratic comfort cost and exponential cooling is a citation of \cite{ramchurn2011agent}. Add a few more constraints, remove the asymettry, make it cyclical to avoid initial conditions. Expectation of PWM rather than direct on-off input.
+Basic spec of the quadratic comfort cost and exponential cooling is a citation of \cite{ramchurn2011agent}. Add a few more constraints, remove the asymmetry, make it cyclical to avoid initial conditions. Expectation of PWM rather than direct on-off input.
 
 Constants. Markov model for occupancy, survey for floor area. Nominal SAP values for insulation. A few magic constants.
 
-
-\subsection{GPGO}
-V short specification of GP and GPGO.
-Justification of using an expensive optimisation technique rather than standard ones.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{optimisation problem}
+The objective function we with to evaluate is
+\begin{equation}
+g = U(\underline{L}(\Lambda))
+\end{equation}
+Rather than search over the full N dimensional space of $\Lambda$ we specify the tariff to be smoothly varying and defined by some parameterised function $\lambda(t \mid \theta)$. The search then takes place over the much smaller space defined by $\theta$. For the following results we interpret $\theta$ as equally spaced support points of a cubic spline over the period, but with an additional constraint that the tariff is bounded above and below by some maximum and minimum value.
+\subsection{Optimization method}
+Since the function, $g$, we with to optimize involves the solution to a constrained multidimensional quadratic for each agent in the ensemble it requires significant computing time to evaluate. It is therefore worthwhile to invest some additional computing time in selecting the next point to evaluate, rather than following grid-search or multi-start line-search algorithms. The method used is Gaussian Process Global Optimization (GPGO)\cite{garnettgaussian} in which given a mean and kernel function a value for the expectation and variance can be obtained for any point in closed form given the points that have been evaluated. Specifically
+\begin{equation}
+define mean, kernel,domain, points, eqn for mean, cov 
+\end{equation}.
+In implementation the Cholesky decomposition of $K$ is used rather than the inverse in order to reduce coputing time and avoid numerical problems. The expectation and variance of the function at a given point can be combined to provide some metric for the utility of an evaluation at that point. The utility used is the expected improvement (EI) which is defined as
+\begin{equation}
+EI=integral where best is...
+\end{equation}
+The choice of mean and kernel and utility functions and the hyperparameters of the kernel function and their prior of course have a major influence on the effectiveness of the optimization. In the results presented below a zero mean function and EI utility function have been used. For the kernel a squared exponential function has been used with independent Gaussian priors over the hyperparameter values. The hyperparameters are updated under to the maximum posterior values given the observed points between evaluations. Searching for the maximum EI location, and for the hyperparameter values is done using the DIRECT search algorithm \cite{jones1993lipschitzian}. Alternatives to these choices are discussed in section REF.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Results}
 hopefully showing that the load responds to the tariff and that GPGO makes good reductions in the objective fn of the load. Show that agents have reduced their daily fee while still fulfilling constraints so are better of under the scheme.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\onecolumn
 
 \section{Review/Proposal}
-
+\doublespacing
 \subsection{Review-optimisation}
-Surrogate surface techniques. GPs. different maximization options, EI, PI, Entropy. multistep lookahead.
-\subsection{Review-tariffsetting}
-Smartgrid overview. Other proposals for load management. This method is new because it both publishes ahead of time (giving agents time to plan ahead and b more flexible) and is not a direct exposure of market prices so is a proper control signal. some use carbon value, not realy very good.
+Surrogate surface techniques. GPs. different maximization options, EI, PI, Entropy. multistep lookahead. Sing the S
 
-\subsection{Proposal-model}
+\subsection{utility of loading}
+Various possibilities exist for evaluating the utility of a proposed load profile. Since a value proportional to the total energy used over the day will be recovered in tariff payments the utility of a profile must be in some way related to its variations from the mean. The simplest model, the one used above, is arrived at by assuming that any variation will incur a cost proportional to it's magnitude as that difference must be bought or sold on the electricity market. Alternatively by assuming that a cheap but relatively constant power source such as nuclear or hydroelectric is available to provide the mean value and any excess must be accomodated by faster responding, but more expensive, sources such as oil or gas turbines. The utility is therefore the sum of absolute deviation from the mean, possibly with an asymmetric gradient for values above or below the mean, possibly with varying weightings through the day according to variations in market price.
+Other possibilities are the load factor (the ratio of maximum to mean load) which is used by \cite{ramchurn2011agent}, or the absolute maximum value, or the ratio or difference of maximum to minimum loads. In reality the utility of a loading would be a complex function related to availability and response times of all the available power sources and the daily variations in wholesale price. This functional is likely to vary daily if a significant proportion of green energy makes up the supply. Wind and solar power will vary significantly from day to day while tidal power will have a gradual trend according to the lunar cycle and ideally the demand would be shifted to match the change in supply. Therefore the aim is develop and optimization method to cater for any arbitrary functional mapping a load vector to a utility scalar.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Reviewtariffsetting}
+
+\cite{ramchurn2011agenthomeo} proposes a method of homeostatic control, in which the consumer is sent a signal containing both a carbon intensity prediction, and a target for consumption relative to the same time the previous day. The agent then adapts its schedule for charging and discharging local storage to achieve a minimum cost load profile. Under this scheme the carbon emission of the system is reduced by $25\%$ and the consumer costs by up to $14.5\%$. Partly this is not desirable since it relies on the consumer being willing to subscribe to a scheme which aims to reduce cost weighted against with carbon emission rather than the absolutely cheapest method. Since $10.4\%$ of English households were considered to be in fuel poverty in 2012 \cite{govfuelpov} this scheme is unlikely to have complete uptake. The homeostatic method also relies on local home storage capacity as the mechanism by which the load the consumers present to the grid can be altered. Local storage may become prevalent in future, particularly if electric cars become common, but is not available at present. Furthermore this means that the homeostatic method is doing nothing to alter the actually pattern of use in the home which is the aim of the method proposed here.
+
+\cite{ramchurn2011agent} uses the model of the consumer on which the one used here is based. Loads are classified as unmoving, shiftable-static or thermal and the agent optimises its scheduling given a tariff schedule to provide maximum utility at minimum cost. However, they use an adapted real time price mechanism in which the consumer is exposed to the predicted wholesale market price of electricity. This method causes the optimal behaviour of agents to tend to create new peaks at the minima of price instead of smoothing the load towards a flat profile. To remedy this they propose that agents use a learning mechanism in which they gradually shift their scheduling from the initial maximum utility times towards the optimal time. This method prevents the formation of new peaks and using it they show that the demand converges to a calculated optimum. This again requires the agent to not be purely cost oriented. They use a learning rate of $0.05$ to produce convergence, while an agent purely concerned with cost would of course learn move immediately to its optimum schedule, an effective learning rate of one. The method proposed here manipulates the tariff that the agent observed, such that the optimum schedule for the agent is also the optimum schedule for the supplier. Cooperation by the consumer is not required.
+
+Smartgrid overview. Other proposals for load management. This method is new because it both publishes ahead of time (giving agents time to plan ahead and be more flexible) and is not a direct exposure of market prices so is a proper control signal. some use carbon value, not really very good.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Proposalmodel}
+In an implementation of the proposed scheme individual thermostats would learn the thermal characteristics of the home they were controlling and the occupancy habits of the owners. \cite{rogers2011adaptive} also uses a quadratic method to derive an optimal heating schedule given either a tariff or a carbon intensity schedule, but also combines this with a Gaussian process technique for learning the thermal parameters of the home and combining these with local weather forecasts to provide an accurate prediction of heating requirements. The learned parameters could be collected anonymously to provide the electricity supplier with accurate data about the requirements of their customer base.
+
+The above work used only the sum of customer heating loads for optimization and aimed to flatten the profile as much as possible. This is based on the assumption that the supplier has cheap access to their own generating capacity which is roughly equal to the total demand, but that deviations from the mean must be purchased or sold at a greater cost. Work in the immediate future will combine the tariff-influenced heating loads with uncontrollable loads to produce a more accurate model of the demand, and will aim to shift the load profile to fulfill more complex objective that are more representative of the electricity market. For example shifting peaks in load to match the availability of uncontrollable green power sources such as tidal or solar.
+
 Form a defensible model of a home using gov. surveys, power company stats, dissagregation datasets. Correlations between insulation/occupancy/location/weather/season/day-to-day.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Proposal-optimisation}
 Fast two-step lookahead \url{http://www.robots.ox.ac.uk./~markm/MSGPGO.pdf}
-
 Using previous result as information for next day, using true load each day to update the model.
 
-\bibliography{trans.bib}{}
-\bibliographystyle{plain}
+\section*{}
+\pagebreak
+\singlespacing
+\twocolumn
+\bibliography{trans.bib}
+
+\bibliographystyle{ieeetr}
 \end{document}
