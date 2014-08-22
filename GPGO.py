@@ -68,7 +68,7 @@ class GPGO():
         return sp.matrix(x),-EImin
     
    
-    def forceAddPoint(self,x,y):
+    def forceAddPoint(self,x,y,suppress_update=False):
         self.nsam+=1
         self.X=sp.vstack([self.X,x])
         self.Y=sp.vstack([self.Y,y])
@@ -77,17 +77,20 @@ class GPGO():
             
             delta=self.best[1]-y
             self.best=[x,y]
-        self.Ky=[]
-        self.KyRs=[]
-        self.llks=[]
-        for kf in self.KFs:
-            tmp=self.buildKsym(kf,self.X)
-            self.Ky.append(tmp)
-            self.KyRs.append(spl.cho_factor(tmp))
-            self.llks.append(self.eval_kernel_llk(kf))
-        self.renorm=sum(map(sp.exp,self.llks))
-	if self.renorm==0.:
-		pass#raise ValueError("renorm=0.0")
+	if not suppress_update:
+		#print "x"
+        	self.Ky=[]
+        	self.KyRs=[]
+        	self.llks=[]
+		
+        	for kf in self.KFs:
+            		tmp=self.buildKsym(kf,self.X)
+            		self.Ky.append(tmp)
+            		self.KyRs.append(spl.cho_factor(tmp))
+            		self.llks.append(self.eval_kernel_llk(kf))
+        	self.renorm=sum(map(sp.exp,self.llks))
+		if self.renorm==0.:
+			pass#raise ValueError("renorm=0.0")
         return delta
     
     def evaluate(self,x):
@@ -346,8 +349,9 @@ class GPGO():
 
     def loadtrace(self,fname):
         e=sp.loadtxt(fname)
-        for i in e:
-            self.forceAddPoint(i[0:-1],i[-1])
+	l=len(e)
+        for j,i in enumerate(e):
+            self.forceAddPoint(i[0:-1],i[-1],suppress_update=(j!=l-1))
         return
 
     def search(self,n,init=12):
