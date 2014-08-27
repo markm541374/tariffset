@@ -739,8 +739,8 @@
 \DeclareOption{a4paper}{\setlength{\paperheight}{297mm}%
                         \setlength{\paperwidth}{210mm}%
 			\setlength{\topmargin}{-0.69in}%
-                        \def\@IEEEmarginE{13.15mm}%
-                        \def\@IEEEmarginW{0.75in}}
+                        \def\@IEEEmarginE{20mm}%
+                        \def\@IEEEmarginW{20mm}}
 
 
 \DeclareOption{oneside}{\@twosidefalse \@mparswitchfalse}

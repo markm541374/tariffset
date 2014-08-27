@@ -18,8 +18,8 @@ def gen_sqexp_k(theta):
 	return lambda x,y:A*sp.exp(-0.5*(x-y)*D*(x-y).T)
 
 import tariffopt as TO
-e=TO.experiment(gen_sqexp_k,[1,0.2,0.2,0.2,0.2,0.2],[[0,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1]],["ts1.txt"],[0.4,0.4,0.4,0.4,0.4],[0.05,0.05,0.05,0.05,0.05],TO.gen_3interp_tariff,TO.load_cost_abflatness)
+e=TO.experiment(gen_sqexp_k,[1,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.2],[[0,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1]],["ts1.txt"],[0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4],[0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05],TO.gen_3interp_tariff,TO.load_cost_abflatness)
 e.search(250)
 
-e.G.savetrace('res/trace5.txt')
-e.G.savehyptrace("res/hyptrace5.txt")
+e.G.savetrace('res/trace8.txt')
+e.G.savehyptrace("res/hyptrace8.txt")

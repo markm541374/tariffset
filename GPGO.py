@@ -110,7 +110,7 @@ class GPGO():
             self.llks.append(self.eval_kernel_llk(kf))
         self.renorm=sum(map(sp.exp,self.llks))
 	if self.renorm==0.:
-		raise ValueError("renorm=0.0")
+		pass#raise ValueError("renorm=0.0")
         return y
 
     def eval_kernel_llk(self,kf):

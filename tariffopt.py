@@ -151,6 +151,7 @@ class quadthermo_agent(agent):
 		self.cm=para[5]
 		self.k=para[6]
 		self.dt=60
+		self.tmpl=[self.k]
 		return
 
 	def get_agentpara(self):
@@ -231,6 +232,8 @@ class quadthermo_agent(agent):
 		self.qv=qv
 		self.N=N
 		self.Lambda=Lambda
+		self.tmpl.append((60*self.P*self.Lambda.T*delta)[0,0])
+		print self.tmpl
 		return [Ti,Te,Ts,delta,qv,N,Lambda]
 
 	def set_schedule_result(self,para):
@@ -241,6 +244,7 @@ class quadthermo_agent(agent):
 		self.qv=para[4]
 		self.N=para[5]
 		self.Lambda=para[6]
+		
 		return
 
 	def plotm(self):
@@ -405,7 +409,7 @@ class objective():
 	
 	
 
-	def eval_under_tariff(self,tariffpara,plot_=False):
+	def eval_under_tariff(self,tariffpara,plot_=False,data_=False):
 		tariff=self.tariffgen(tariffpara)
 		cost=0.
 		loads=[]
@@ -423,6 +427,7 @@ class objective():
 			cost+=self.loadcostfn(load)
 		cost=cost/float(self.N)
 		if plot_:
+			data=[]
 			
 			tm=range(24*60)
 			plt.figure(figsize=(18,12))
@@ -431,10 +436,13 @@ class objective():
 
 			ax1.set_ylabel("Load")
 			ax0.set_ylabel("Tariff")
-			ax0.plot(tm,map(lambda x:360000000*tariff(x),[j*60 for j in tm]))
+			tr=map(lambda x:360000000*tariff(x),[j*60 for j in tm])
+			ax0.plot(tm,tr)
 			ax0.axis([0,1600,0,50])
+			data.append(tr)
 			for i in range(self.N):
 				ax1.plot(tm,loads[i])
+				data.append(loads[i])
 				
 			plt.draw()
 		sqflatness_cost=0
@@ -464,6 +472,8 @@ class objective():
 		f1.close()
 		f2.close()
 		f3.close()
+		if data_:
+			return cost,data
 		return cost
 
 	def flat_ref(self):

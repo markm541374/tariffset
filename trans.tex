@@ -21,15 +21,17 @@
 \usepackage{amssymb}  % assumes amsmath package installed
 \usepackage{epstopdf}
 \usepackage{setspace}
-
+\usepackage[margin=20mm]{geometry}
+\usepackage{anyfontsize}
 \usepackage{hyperref}
-
+\usepackage{bm}
 \DeclareMathOperator*{\argmin}{arg\,min}
 
 \title{\LARGE \bf Transfer}
 
 \author{Mark McLeod}
 \date{}
+\usepackage{graphicx}
 \begin{document}
 \maketitle
 \thispagestyle{empty}
@@ -38,12 +40,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Paper Section}
 \subsection{Problem outline}
+
 %material from \url{https://github.com/markm541374/tariffset/blob/master/problem_spec.pdf}
-Preamble about government energy targets, carbon, orchid, and the impending rise of the smart grid.
+In order to reduce greenhouse gas emissions many governments are aiming to reduce their energy use, and to reduce the proportion of energy that is used that is sourced from unsustainable sources. This means a significant increase in renewable sources which provide a supply that is much less controllable, and much less reliable than traditional supply methods. One of the key changes required to implement these changes is the development of the smart grid, in which consumers and suppliers exchange information and modify their actions in order to ensure continuous power despite uncontrollable limitations in supply. Since the ability of humans to react to price variation is limited, and certainly not reasonably sufficient to find optimal strategies for complex problems such as scheduling heating under variable tariffs and external temperatures, the use of semi-autonomous devices that are able to react to changes in the network by altering their behaviour is required. These agents will be primarily aiming to achieve maximum utility for the consumer, so the field of incentive engineering is required, to ensure that the optimal course of action from the individual agent perspective leads to desirable behaviour in the entire system.
 
-Short overview of electricity generation and distribution that motivates influencing the shape of the daily load profile.
+The current state of the electricity grid is that supply adapts to meet supply and the electricity tariff presented to domestic consumers is either constant, or a very simple time-of-use tariff such as economy-7. To ensure that demand is met a hierarchy of sources are used, with cheaper, more efficient but slower responding, supplies such as nuclear used wherever possible, and fast responding but inefficient and more expensive supplies such as gas turbines used to match variation on shorter time scales. Spinning reserves accommodate extremely fast variations and storage schemes such as pumped hydroelectric take up excess when required and feed it back at a later time.
+Supply companies buy and sell contracts to meet any predicted demand that cannot be met with their own sources, or sell excess supply in an advance market, then pay with hindsight for the difference between this and the energy actually consumed.
+In order to make improvement on this process it is necessary for the consumer to be made aware in some way of the availability of power and alter their behaviour by shifting their use to away from times when demand is high and must be met by inefficient sources, and towards times where there is excess capacity that would otherwise need to be stored and reintroduced with an associated loss. Previous schemes that have aimed to implement this are discussed in section REF. The proposed method here is to introduce a tariff that varies with time according to a parametrised generating function and is communicated in advance to customers. The customers then alter their behaviour to incur minimum cost under this tariff while still achieving their goals. It is then proposed that these parameters are optimised so that the load profile induced is the best from the suppliers point of view that is available.
+To achieve this optimisation a model of the home and the agent controlling it is developed, so far only concerning heating, and an ensemble of draws for this model is used as a model of the consumer base. Evaluating the response of this model to a given tariff provides a prediction of the load and this can be used to optimise the parameters of the tariff. Results are presented showing that the optimum parametrisation of the tariff provides an improvement of the induced load in terms of flatness.
 
-The aim of this work is to develop a method for setting time varying tariffs in a way that allows the shape of the load profile due to domestic space heating to be controlled.
+%Preamble about government energy targets, carbon, orchid, and the impending rise of the smart grid.
+
+%Short overview of electricity generation and distribution that motivates influencing the shape of the daily load profile.
+
+%The aim of this work is to develop a method for setting time varying tariffs in a way that allows the shape of the load profile due to domestic space heating to be controlled.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{the problem}
 In this work we consider an electricity supplier with a set of customers $c \in C$. Each of these customers has a load $l_{c}(t)$  so that the load to be met by the supplier is
@@ -84,11 +94,11 @@ If the time period under consideration is discretized into $N$ periods of $\Delt
 which is an affine relation between temperature and input that can be expressed as
 
 \begin{equation}
-\underline{T}=\mathbf{\Phi} \underline{\delta}+\underline{\Psi}
+\underline{T}=\underline{\Psi}+\boldsymbol{\Phi} \underline{\delta}
 \end{equation}
 where
 \begin{equation}
-\mathbf{\Phi}= \frac{\Delta t P}{cm} \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1}
+\boldsymbol{\Phi}= \frac{\Delta t P}{cm} \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1}
 \end{equation}
 \begin{equation}
 \underline{\Psi}= \left( \mathbf{I}_{N+1 \times N \times 1}-(1-\frac{\Delta t k}{cm})\mathbf{U}\right)^{-1} \left( \frac{\Delta t k}{cm}\mathbf{U}\underline{T}^{e}\right)
@@ -114,6 +124,7 @@ So that the dimensionality of the problem can be reduced to a lower number than 
 \end{equation}
 where $\underline{u}$ is the $M$ dimensional column vector that will be optimised over and $D$ is the $M\times N$ matrix
 \begin{equation}
+\label{quadthermodimension}
 \mathbf{D}=\mathbf{I}_{M} \otimes \underline{1}_{J \times 1},\qquad N=MJ
 \end{equation}.
 
@@ -123,11 +134,11 @@ f'=\underline{u}^{T}\mathbf{R}\underline{u}+\underline{S}^{T}\underline{u}
 \end{equation}
 which differs from the original objective by a constant and where
 \begin{equation}
-\mathbf{R}=\mathbf{D}^{T}\mathbf{\Phi}^{T}\mathbf{Q}\mathbf{\Phi}\mathbf{D}
+\mathbf{R}=\mathbf{D}^{T}\boldsymbol{\Phi}^{T}\mathbf{Q}\boldsymbol{\Phi}\mathbf{D}
 \end{equation}
 and
 \begin{equation}
-\underline{S}^{T}=2(\underline{\Psi}-\underline{T}^s)^{T}\mathbf{Q}\mathbf{\Phi}\mathbf{D}+P\underline{\Lambda}^{T} \mathbf{D}
+\underline{S}^{T}=2(\underline{\Psi}-\underline{T}^s)^{T}\mathbf{Q}\boldsymbol{\Phi}\mathbf{D}+P\underline{\Lambda}^{T} \mathbf{D}
 \end{equation}
 
 The only constraints strictly required are those that constrain the heater input to be set between zero and one. 
@@ -183,47 +194,150 @@ g = U(\underline{L}(\Lambda))
 \end{equation}
 Rather than search over the full N dimensional space of $\Lambda$ we specify the tariff to be smoothly varying and defined by some parameterised function $\lambda(t \mid \theta)$. The search then takes place over the much smaller space defined by $\theta$. For the following results we interpret $\theta$ as equally spaced support points of a cubic spline over the period, but with an additional constraint that the tariff is bounded above and below by some maximum and minimum value.
 \subsection{Optimization method}
-Since the function, $g$, we with to optimize involves the solution to a constrained multidimensional quadratic for each agent in the ensemble it requires significant computing time to evaluate. It is therefore worthwhile to invest some additional computing time in selecting the next point to evaluate, rather than following grid-search or multi-start line-search algorithms. The method used is Gaussian Process Global Optimization (GPGO)\cite{garnettgaussian} in which given a mean and kernel function a value for the expectation and variance can be obtained for any point in closed form given the points that have been evaluated. Specifically
+Since the function, $g$, we with to optimize involves the solution to a constrained multidimensional quadratic for each agent in the ensemble it requires significant computing time to evaluate. It is therefore worthwhile to invest some additional computing time in selecting the next point to evaluate, rather than following grid-search or multi-start line-search algorithms. The method used is Gaussian Process Global Optimization (GPGO)\cite{garnettgaussian} in which given a mean and kernel function a value for the expectation and variance can be obtained for any point in closed form given the points that have been evaluated.
+Specifically, when evaluating a function $y=f(\underline{x})$  it is assumed that the value of y has a prior given by $\mu (\underline{x})$ and is jointly Gaussian at all points with the covariance between two locations $x$ and $x'$ defined by a valid kernel unction $k(\underline{x},\underline{x}')$ given a set of points $\mathbf{x}_{0}$ that have been evaluated as $\underline{y}_{0}$ then the posterior, $p(y_{s})$ at a point of interest $\underline{x}_s$ is normally distributed
 \begin{equation}
-define mean, kernel,domain, points, eqn for mean, cov 
-\end{equation}.
-In implementation the Cholesky decomposition of $K$ is used rather than the inverse in order to reduce coputing time and avoid numerical problems. The expectation and variance of the function at a given point can be combined to provide some metric for the utility of an evaluation at that point. The utility used is the expected improvement (EI) which is defined as
+ y_{s}\mid \underline{x}_{0},y_{0}\sim\mathcal{N}\left( \langle y_{s}\rangle ,\mathrm{var}(y_{s})\right)
+\end{equation}
+where
 \begin{equation}
-EI=integral where best is...
+\langle y_{s}\rangle 	=K_{sx}K_{xx}^{-1}y_{0}
+\end{equation}
+\begin{equation}
+\mathrm{var}\left(y_{s}\right)	=K_{ss}-K_{sx} K_{xx}^{-1} K_{sx}^{T}
+\end{equation}
+\begin{equation}
+K_{ss}	= k(\underline{x}_s,\underline{x}_s)
+\end{equation}
+\begin{equation}
+K_{sx}	=[k\left(\mathbf{x}_{0}[i],\underline{x}_s\right)]
+\end{equation}
+\begin{equation}
+K_{xx}	=[k\left(\mathbf{x}_{0}[i],\mathbf{x}_{0}[j]\right)]
+\end{equation}
+
+In implementation the Cholesky decomposition of $K_{xx}$ is used rather than the inverse in order to reduce computing time and avoid numerical problems.
+The expectation and variance of the posterior of the function can be combined to provide some metric for the utility of an evaluation at that point. The utility used is here is the expected improvement (EI) over the minimum so far observed, which is defined as
+\begin{equation}
+EI(\underline{x}_{s} \mid \mathbf{x}_0, \underline{y}_0, k)= \int_{-\infty  }^{y_{opt}} (y_{opt}-y_{s})p(y_{s}) \mathrm{d}y_{s}
+\end{equation}
+where
+\begin{equation}
+y_{opt} = \min(\underline{y}_{0})
 \end{equation}
 The choice of mean and kernel and utility functions and the hyperparameters of the kernel function and their prior of course have a major influence on the effectiveness of the optimization. In the results presented below a zero mean function and EI utility function have been used. For the kernel a squared exponential function has been used with independent Gaussian priors over the hyperparameter values. The hyperparameters are updated under to the maximum posterior values given the observed points between evaluations. Searching for the maximum EI location, and for the hyperparameter values is done using the DIRECT search algorithm \cite{jones1993lipschitzian}. Alternatives to these choices are discussed in section REF.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Results}
-hopefully showing that the load responds to the tariff and that GPGO makes good reductions in the objective fn of the load. Show that agents have reduced their daily fee while still fulfilling constraints so are better of under the scheme.
+The tariff is chosen to be a generated by a cubic spline passing through equally spaced support points. The support points are constrained to lie between five and 40 pence per kWh. Since when adjacent support points have a large difference this leads to a curve that can go considerable outside the range the tariff is also clipped so that it remains between five and 40 pence per kWh. The tariff is tested on a set of 60 models of a home created from a generative model with parameters drawn independently according to the distributions shown in TABLE. These agents optimize their load profile while still fulfilling their constraints using a 15 minute resolution for the control input, and a one minute resolution for cooling simulation, that is in equation \ref{quadthermodimension} $N=1440$ and $M=96$. The utility of the induced load is the negative of the sum of the difference from the mean load over the day, normalised against the mean load. Intuitively this would mean that while a continuous unit load would have a utility of zero a load of two units for half the time and zero for the rest would have a utility of $-1$.
+
+A squared exponential kernel is used in the Gaussian process. Inputs are expressed in pounds per kWh so the  prior over input scales are chosen to be lognormal distributions centered on $10^-1$ with standard deviations of one decade. The prior over the output scale is also lognormal, with a mean of $10^0$ and a decade standard deviation. The optimization is permitted to run for $250$ evaluations of the objective. The first twelve points are selected with at random to initialize the GP, with independent uniform distribution over the support points. The covariance is then updated to the MAP estimate after the initialization. Since the evaluation of the kernel likelihood required a cholesky decomposition the time required grows rapidly with the number of points evaluated. The hyperparameters are therefore only optimized once for every ten evaluations of the objective up to the first 80 evaluations, and every 15 thereafter. In both searching for hyperparameters and for expected improvement the DIRECT algorithm is used.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=\columnwidth,trim =0cm 0cm 0cm 0cm,clip=True]{f2.eps}
+\caption{The performance in terms of deviation from the mean load of the best cubic spline tariffs obtained with varying degrees of freedom on the training set of 60 agents (blue) and on a test set also of 60 agents (red). The tariff is constrained between 5 and 40 pence per kWh. Four is the minimum number of support points required to define a cubic. The horizontal lines shows the response to a flat tariff, the value taken by the flat tariff affects the response by only 1\% over the full range of 5 to 40 pence per kWh.}
+\label{DOFplot}
+\end{figure}
+
+Figure \ref{DOFplot} shows the performance improvement using the best tariff found at various degrees of freedom for both test and training data. A tariff with four degrees of freedom provides a $6.7\%$ improvement of the objective function compared to a flat tariff, seven degrees of freedom allow the greatest observed improvement in the training set of $12.6\%$ improvement. It is clear that the use of the variable tariff has caused the induced load to be flattened, and this flattening is increased with more degrees of freedom in the tariff. It is worth noting that it is quite likely that there is further improvement available with further searching about 7 degrees of freedom where the curve begins to flatten, as for these searches the expected improvement available at the final point evaluated was orders of magnitude greater than the final evaluation of the searches in lower degrees of freedom. The 4 DOF search actually terminated before 250 evaluations since the expected improvements at all points tested by the DIRECT search was less than the numerical precision and evaluated as zero. This trend is also present on a test set of equal size, which demonstrates that the optimization is not over fitting the tariff to the individual agents in the test data. 
+
+\begin{figure*}[htb]
+\centering
+\includegraphics[width=\textwidth,trim =4cm 12cm 4cm 2cm,clip=True]{f1.eps}
+\caption{Load response of an ensemble of 60 agents to variable tariffs. The upper axis shows the load in MW while the lower axis shows the tariff in pence per kWh with support points shown as filled circles. Red is a flat tariff for reference, green is the best tariff found using four support points, blue is the best tariff found using seven support points.}
+\label{loadcurve}
+\end{figure*}
+
+Figure \cite{loadcurve} shows the load curves over the day. It can be seen that the load with a flat tariff begins at about $1MW$ until roughly 7am where there is a significant spike of roughly $4.5MW$ following which it returns to a reasonable flat $2.5MW$ for the rest of the day. The optimised tariffs make significant reductions in the peak of the spike in the morning  by shifting this load earlier.
+
+Normally it would be appropriate to compare the price paid by the consumers under the optimized tariff to the price under the flat tariff to determine whether there is an incentive to switch. However, the response of the objective function is primarily to the shape of the tariff rather than to the value. This means that the utility of the response under a flat tariff at the maximum value of $40 pence per kWh$, which would of course lead to all consumers making savings, is only $1\%$ different from the flat response at at the minimum tariff of $5 pence per kWh$, in which case all consumers would pay more. It is therefore clearly possible to ensure that customers would prefer to select a variable tariff by appropriate selection of the value of the flat-tariff alternative. To find the truly optimal tariff it is necessary to attach a realistic to the coefficient to the distributor of non-flatness and sum this with the tariff collected from the consumers to find the real cost of a given load. This is discussed in section REF.
+
+\subsection{conclusion}
+A probabilistic model for the thermal behavior and requirements of a domestic home, and an intelligent agent that can calculate optimal behavior for the home given a continuously varying tariff have been defined. Using a traing set drawn from this model it has been demonstrated that the shape of the electrical load responds to variations in the shape of the tariff. Using a parameterized tariff an expensive global optimization method has been used to find the parameters that maximize the flatness of the induced load. 
+
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \onecolumn
-
+\large
 \section{Review/Proposal}
 \doublespacing
 \subsection{Review-optimisation}
-Surrogate surface techniques. GPs. different maximization options, EI, PI, Entropy. multistep lookahead. Sing the S
+Various methods are available for global optimisation. Optimisation over functions that are easy to evaluate can be done using local search techniques with multiple start points to ensure that all local minmuma are found, by simple gridsearch with a spacing at the required accuracy or more intelligent but grid-like deterministic methods such as DIRECT. ***branch and bound, trust region, pattern search***.
 
+However, in the case of functions that incur significant cost to evaluate it is necessary to invest significant effort into determining the next point to evaluate. Surrogate surfaces techniques are commonly used in this situation, in these an approximation to the objective function is made under some model based on the points that have been observed so far. This approximation, known as the surrogate surface, is cheap and fast to evaluate so the prediction about the true objective can be exploded in order to carefully choose the next point to evaluate.
+
+CITE provides an overview of some more common surrogate surface techniques. Regression methods with finite degrees of freedom are quickly as they do not pass through all the evaluated points and fail even a simple example function. These methods are only useful if a model that is known to be a very good fit for the objective is available. CITE next consider methods which interpolate between the evaluated points using weighted sums of fixed basis functions centred at the evaluated points, such as splines or polynomials. Evaluating at the minimum predicted by these methods provides better results than finite DOF models but can still fail to find the global minimum. The most promising methods are those that have a basis in probability, viewing the objective function as an unknown variable. Rather than evaluating at the minimum of the surrogate surface they form a measure of the utility for evaluation at a point using a combination of both the prediction and its uncertainty at that point. By doing this it can be ensured that all points in the space will eventually be visited, which is a required condition for guaranteeing that the global minimum will be found CITE. This is the basis of Gaussian process global optimisation, which is hte method used here, although CITE name it kriging.
+
+The mathematical basis of GPGO by which the function is modelled as a draw from a space of functions that are jointly Gaussian between all points (with the correlation between points defined by a kernel function) and expectation and covariance at a point given existing points is given above
+
+Surrogate surface techniques. GPs. different maximization options, EI, PI, Entropy. multistep lookahead. Sing the S
+\cite{} lists three common aquisition functions, the expected improvement, the probability of improvement and global confidence bounds. They also propose a per-second variation of expected improvement for objectives which have variable evaluation times. They suggest that expected improvement is the prefered method, and show that it does provide better performance than the confidence bound metric on some test functions. For this reason expected improvement is the method used here.
+
+Other methods for selecting points based on a Gaussian process model of the objective are suggested by CITEhennig and CITEsoo. Hennig rather than aiming to make improvements on the observed value of the function aims to improve an entropy based measure of knowledge about the location of the global minimum. CITE uses a tree exploration structure to avoid the requirement to search over the acquisition surface, but combines this with a Gaussian process confidence bound method for deciding which elements of the tree to explore. They show that this method performs similarly to GPGO in problems of low dimensionality, but is able to converge faster for higher dimensional problems.
+
+In all methods involving it is of course important to ensure that
 \subsection{utility of loading}
-Various possibilities exist for evaluating the utility of a proposed load profile. Since a value proportional to the total energy used over the day will be recovered in tariff payments the utility of a profile must be in some way related to its variations from the mean. The simplest model, the one used above, is arrived at by assuming that any variation will incur a cost proportional to it's magnitude as that difference must be bought or sold on the electricity market. Alternatively by assuming that a cheap but relatively constant power source such as nuclear or hydroelectric is available to provide the mean value and any excess must be accomodated by faster responding, but more expensive, sources such as oil or gas turbines. The utility is therefore the sum of absolute deviation from the mean, possibly with an asymmetric gradient for values above or below the mean, possibly with varying weightings through the day according to variations in market price.
+Various possibilities exist for evaluating the utility of a proposed load profile. Since a value proportional to the total energy used over the day will be recovered in tariff payments the utility of a profile must be in some way related to its variations from the mean. The simplest model, the one used above, is arrived at by assuming that any variation will incur a cost proportional to it's magnitude as that difference must be bought or sold on the electricity market. Alternatively by assuming that a cheap but relatively constant power source such as nuclear or hydroelectric is available to provide the mean value and any excess must be accommodated by faster responding, but more expensive, sources such as oil or gas turbines. The utility is therefore the sum of absolute deviation from the mean, possibly with an asymmetric gradient for values above or below the mean, possibly with varying weightings through the day according to variations in market price.
 Other possibilities are the load factor (the ratio of maximum to mean load) which is used by \cite{ramchurn2011agent}, or the absolute maximum value, or the ratio or difference of maximum to minimum loads. In reality the utility of a loading would be a complex function related to availability and response times of all the available power sources and the daily variations in wholesale price. This functional is likely to vary daily if a significant proportion of green energy makes up the supply. Wind and solar power will vary significantly from day to day while tidal power will have a gradual trend according to the lunar cycle and ideally the demand would be shifted to match the change in supply. Therefore the aim is develop and optimization method to cater for any arbitrary functional mapping a load vector to a utility scalar.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{}
+Choice of covariance function is one of the most important factors in the effectiveness of the optimizations, since it determines how well the Gaussian process is able to make predictions about the objective, and how certain those predictions are considered to be. Many kernel functions are expressed in terms of a weighted euclidean distance between points, where the weights of each axis, $\theta_{d}$, constitute most of the hyper-parameters of the kernel.
+\begin{equation}
+r^{2}(\underline{x},\underline{x}') = \sum_{d \in D}\frac{1}{\theta_{d}}(\underline{x}_{d}-\underline{x}'_{d}) 
+\end{equation}
+among these are some of the most commonly used functions such as the squared exponential and the Matern 5/2. In the tariff setting problem where the aim is to improve the flatness of the induced load gradient may be of greater impact on the output than absolute value, so applying covariance functions not to the tariff support points, but to a linear transform of the support points that switches to differences between adjacent points and a single mean value may provide useful results.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Reviewtariffsetting}
 
 \cite{ramchurn2011agenthomeo} proposes a method of homeostatic control, in which the consumer is sent a signal containing both a carbon intensity prediction, and a target for consumption relative to the same time the previous day. The agent then adapts its schedule for charging and discharging local storage to achieve a minimum cost load profile. Under this scheme the carbon emission of the system is reduced by $25\%$ and the consumer costs by up to $14.5\%$. Partly this is not desirable since it relies on the consumer being willing to subscribe to a scheme which aims to reduce cost weighted against with carbon emission rather than the absolutely cheapest method. Since $10.4\%$ of English households were considered to be in fuel poverty in 2012 \cite{govfuelpov} this scheme is unlikely to have complete uptake. The homeostatic method also relies on local home storage capacity as the mechanism by which the load the consumers present to the grid can be altered. Local storage may become prevalent in future, particularly if electric cars become common, but is not available at present. Furthermore this means that the homeostatic method is doing nothing to alter the actually pattern of use in the home which is the aim of the method proposed here.
 
-\cite{ramchurn2011agent} uses the model of the consumer on which the one used here is based. Loads are classified as unmoving, shiftable-static or thermal and the agent optimises its scheduling given a tariff schedule to provide maximum utility at minimum cost. However, they use an adapted real time price mechanism in which the consumer is exposed to the predicted wholesale market price of electricity. This method causes the optimal behaviour of agents to tend to create new peaks at the minima of price instead of smoothing the load towards a flat profile. To remedy this they propose that agents use a learning mechanism in which they gradually shift their scheduling from the initial maximum utility times towards the optimal time. This method prevents the formation of new peaks and using it they show that the demand converges to a calculated optimum. This again requires the agent to not be purely cost oriented. They use a learning rate of $0.05$ to produce convergence, while an agent purely concerned with cost would of course learn move immediately to its optimum schedule, an effective learning rate of one. The method proposed here manipulates the tariff that the agent observed, such that the optimum schedule for the agent is also the optimum schedule for the supplier. Cooperation by the consumer is not required.
+\cite{ramchurn2011agent} uses the model of the consumer on which the one used here is based. Loads are classified as unmoving, shiftable-static or thermal and the agent optimizes its scheduling given a tariff schedule to provide maximum utility at minimum cost. However, they use an adapted real time price mechanism in which the consumer is exposed to the predicted wholesale market price of electricity. This method causes the optimal behavior of agents to tend to create new peaks at the minimum price instead of smoothing the load towards a flat profile. To remedy this they propose that agents use a learning mechanism in which they gradually shift their scheduling from the initial maximum utility times towards the optimal time. This method prevents the formation of new peaks and using it they show that the demand converges to a calculated optimum. This again requires the agent to not be purely cost oriented. They use a learning rate of $0.05$ to produce convergence, while an agent purely concerned with cost would of course learn move immediately to its optimum schedule, an effective learning rate of one. The method proposed here manipulates the tariff that the agent observed, such that the optimum schedule for the agent is also the optimum schedule for the supplier. Cooperation by the consumer is not required.
 
 Smartgrid overview. Other proposals for load management. This method is new because it both publishes ahead of time (giving agents time to plan ahead and be more flexible) and is not a direct exposure of market prices so is a proper control signal. some use carbon value, not really very good.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Proposalmodel}
-In an implementation of the proposed scheme individual thermostats would learn the thermal characteristics of the home they were controlling and the occupancy habits of the owners. \cite{rogers2011adaptive} also uses a quadratic method to derive an optimal heating schedule given either a tariff or a carbon intensity schedule, but also combines this with a Gaussian process technique for learning the thermal parameters of the home and combining these with local weather forecasts to provide an accurate prediction of heating requirements. The learned parameters could be collected anonymously to provide the electricity supplier with accurate data about the requirements of their customer base.
+In an implementation of the proposed scheme individual thermostats would learn the thermal characteristics of the home they were controlling and the occupancy habits of the owners. \cite{rogers2011adaptive} also uses a quadratic method to derive an optimal heating schedule given either a tariff or a carbon intensity schedule, but also combines this with a Gaussian process technique for learning the thermal parameters of the home and combining these with local weather forecasts to provide an accurate prediction of heating requirements. The learned parameters could be collected anonymously to provide the electricity supplier with accurate data about the requirements of their customer base. 
 
 The above work used only the sum of customer heating loads for optimization and aimed to flatten the profile as much as possible. This is based on the assumption that the supplier has cheap access to their own generating capacity which is roughly equal to the total demand, but that deviations from the mean must be purchased or sold at a greater cost. Work in the immediate future will combine the tariff-influenced heating loads with uncontrollable loads to produce a more accurate model of the demand, and will aim to shift the load profile to fulfill more complex objective that are more representative of the electricity market. For example shifting peaks in load to match the availability of uncontrollable green power sources such as tidal or solar.
 
+To make a useful model rather than a proof of concept it will be necessary to make improvements to model of the home, and to the generative process used to create sample houses. 
 Form a defensible model of a home using gov. surveys, power company stats, dissagregation datasets. Correlations between insulation/occupancy/location/weather/season/day-to-day.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Proposal-optimisation}
+One of the drawbacks of standard GPGO using the expected improvement metric is that the choice of the next point to evaluate under this basis is not actually what is desired, except for the very final evaluation. What is truly desired is the point that will lead to eventually finding the minimum many steps later.
+
+One method proposed to improve on this situation is to consider the expected improvement two or more steps ahead conditioned on evaluation at the proposed next point. This would ideally be extended to consider the expected improvement at the final point to be evaluated, given all permutations of intermediate points between termination and the present, but this is not feasible in any simple implementations as the computational load grows very rapidly with the number of steps taken. Two methods for achieving faster computation are proposed as potential avenues of investigation. First, since the expected improvement multiple steps ahead for evaluation at a proposed point has become in itself an expensive to evaluate function it is possible that it is worthwhile to use GPGO with a lower lookahead window to minimize the acquisition function. That is a GP will be fitted to the expected improvement in the surrogate surface and used to choose the next point to evaluate. The aim will be to determine whether the additional cost of maintaining a GP as an inner process is worth the reduced time spent on acquisition function evaluations. The second proposed opportunity to achieve faster optimization is one 
+
+The main avenue of research proposed in the area of optimization is to attempt to create a principled approach to the case where the noise on the evaluation of the objective function is a variable, with increased accuracy coming at increased cost. Specifically in addition to choosing the next point to evaluate the accuracy of that evaluation must be selected, with some budget on evaluations causing less future evaluations to be possible if greater accuracy is chosen. This is applicable in finite element simulations, where the results become more accurate with smaller mesh sizes; in hyperparameter selection for classifiers, where larger training sets prevent over-fitting; and in simulations with particle filter or ensemble models such as the home heating model described here, where the behavior tends towards the continuous case as the number tens to infinity. The entropy approach to optimization proposed by CITEhennig seems to be the most suitable for development in this area given its focus on knowledge about the location of the minimum rather than greedy improvements to the current best.
+
+One immediately apparent method of implementing such a process is to propose some function that represents a prior belief of how much information about the location of the global minimum can be gained within a given budget. Specifically if the function is as usual over $\underline{x} \in \mathbb{R}^{d}$ and the points $\mathbf{X}_{0}$ have already been evaluated then using information $I$ about the location of the global minimum as the reciprocal of entropy used by CITEHennig we define three information quantities:
+\begin{equation}
+I(\mathbf{X})
+\end{equation}
+the information conferred by the evaluation of the points in $\mathbf{X}$,
+\begin{equation}
+\langle\Delta I(\underline{x}_{p},b \mid \mathbf{X})\rangle
+\end{equation}
+is the expected gain in information by evaluating at the point $\underline{x}_{p}$ with the accuracy available to us using a computational budget $b$ given the points $\mathbf{X}$ that have already been evaluated and
+\begin{equation}
+\langle I_{g}(\beta)\rangle
+\end{equation}
+the information expected to be gained by expending a computational budget $\beta$ on evaluating points.
+The point to be evaluated and the computational budget given an available budget $B$ to use is therefore
+\begin{equation}
+\argmin_{\underline{x},b \in \mathbb{R}^{d} \times [0,B]} \langle\Delta I(\underline{x},b \mid \mathbf{X})\rangle + \langle I_{g}(B-b)\rangle
+\end{equation}
+
+This formulation is analagous to a reinforcement learning problem. $\mathbf{X},B$ define the state, $\langle I_{g}(B)\rangle$ is the state value, $\underline{x}_{p},b$ is the action and $\langle\Delta I(\underline{x}_{p},b \mid \mathbf{X})\rangle$ is the action value, which can be evaluated using the procedure defined in CITEhenngi.
+
+The crucial missing element in this formulation is the state value function which encodes how much information is expected to be gained from a given computational budget, which must be reasonably accurate to provide useful results. In the case of problems where a lot of similar optimizations will be taking place it can be learned, using reinforcement learning techniques for continuous space. This method could be applied to a tariff setting problem where the consumer model takes account of external environmental factors. The objective will be broadly similar each day as the consumer requirements have not changed but the differing predicted weather conditions each day cause minor changes to the response. In this case the information gain from previous days can be used as a state value function. It may be feasible to construct a more general approach to determining the state value function using no or only a small number of parameters and improving this estimate online, investigation into this possibility would be a major theme of research.
+
+
+
 Fast two-step lookahead \url{http://www.robots.ox.ac.uk./~markm/MSGPGO.pdf}
 Using previous result as information for next day, using true load each day to update the model.
 
