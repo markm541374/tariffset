@@ -103,6 +103,7 @@ class rect_SSL_agent(agent):
 				best_dt=i*60
 		#print "best_c: "+str(best_c)+" best_dt: "+str(best_dt)
 		self.ts=self.t0+best_dt
+		
 		return [self.ts]
 
 	def set_schedule_result(self,para):
@@ -234,6 +235,11 @@ class quadthermo_agent(agent):
 		self.Lambda=Lambda
 		self.tmpl.append((60*self.P*self.Lambda.T*delta)[0,0])
 		print self.tmpl
+
+		####
+		self.plotm()
+		
+		####
 		return [Ti,Te,Ts,delta,qv,N,Lambda]
 
 	def set_schedule_result(self,para):
@@ -251,28 +257,24 @@ class quadthermo_agent(agent):
 		plt.figure(figsize=(18,12))
 
 		ax0 = plt.subplot2grid((8,5),(0,0),rowspan=4,colspan=5)
-		ax0.set_ylabel("Temperature")
+		ax0.set_ylabel("Temperature (C)")
 		ax0.plot(sp.array(self.Ti))
 		ax0.plot(sp.array(self.Ts))
 		ax0.plot(sp.array(self.Te))
 		ax0.axis([0,self.N,0,22])
 
 		ax1 = plt.subplot2grid((8,5),(4,0),rowspan=1,colspan=5)
-		ax1.set_ylabel("Load")
-		ax1.plot(sp.array(self.P*self.delta))
+		ax1.set_ylabel("Load (kW)")
+		ax1.plot(sp.array(0.001*self.P*self.delta))
 		#ax1.plot(sp.array(self.Lambda))
-		ax1.axis([0,self.N,0,self.P])
+		ax1.axis([0,self.N,0,0.001*self.P*0.5])
 
 		ax2 = plt.subplot2grid((8,5),(5,0),rowspan=1,colspan=5)
-		ax2.set_ylabel("Tariff")
+		ax2.set_ylabel("Tariff (pence per kWh)")
 		ax2.plot(sp.array(60*60*1000*self.Lambda))
-		ax2.axis([0,self.N,0,1])
-
-		ax3 = plt.subplot2grid((8,5),(6,0),rowspan=1,colspan=5)
-		ax3.set_ylabel("CostWeight")
-		ax3.plot(sp.array(self.qv))
-		ax3.axis([0,self.N,0,2])
-
+		ax2.axis([0,self.N,0,0.5])
+		ax2.set_xlabel("time (min)")
+		plt.savefig("tmp.eps")
 		plt.draw()
 		return
 
