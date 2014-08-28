@@ -55,32 +55,7 @@ To achieve this optimization a model of the home and the agent controlling it is
 
 %The aim of this work is to develop a method for setting time varying tariffs in a way that allows the shape of the load profile due to domestic space heating to be controlled.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{The Supplier Problem}
-In this work we consider an electricity supplier with a set of customers $c \in C$. Each of these customers has a load $l_{c}(t)$  so that the load to be met by the supplier is
-\begin{equation}
-L(t) = \sum_{c \in C} l_{c}(t)
-\end{equation}
-There exists some utility functional for production $U_{p}(L(t))$ which specifies how much it costs the producer to supply this power. $U$ will be based on the sources of power available to the supplier, and the market prices at which it must sell excess and buy shortfall.
-Each consumer is charged at a rate which we allow to be a function of time $\lambda (t)$. The balance of payments for the supplier is therefore
-\begin{equation}
-\Delta = \int_{T}L(t) \lambda(t) \mathrm{d}t - U_{p}(L(t))
-\end{equation}
-and the supplier naturally wishes to choose $\lambda$ to maximize profit (subject to constraints such as not being so high that consumers will choose to use other supplies). To simplify the mathematics for this work we assume that the tariff will balance the component of $U$ which is due to the average power consumption, so are only concerned with the shape of $L$ rather than its absolute value. The following results use the integral of absolute difference from the mean power, but other options are of course available and are discussed in section REF.
-Further, the load is divided by end use into load that is and is not controllable via $\Lambda$ and only that component which is controllable is considered.
 
-To model the response of the full set of customers multiple agents are created using a generative process to determine individual parameters and the sum of their load is used. That is is a single thermal agent from the set of agents in the ensemble $a \in A$ is characterized by a vector $\theta_{a}$ and the optimization process that produces a load profile $\underline{l}$ given a tariff profile $\underline{\Lambda}$ is denoted
-\begin{equation}
-\underline{l}=h(\underline{\Lambda} \mid \theta)
-\end{equation}
-then the load $\underline{L}$ produced by the entire ensemble of agents is
-\begin{equation}
-\underline{L}(\underline{\Lambda}) = \sum_{a \in A} h(\underline{\Lambda} \mid \theta_{a})
-\end{equation}
-To provide an suitable target for optimization the load profile vector must be mapped to a scalar that conveys the utility to the supplier of that load. For the following results the objective used is the normalized integral of the deviation from the mean load.
-\begin{equation}
-U(\underline{L})=\sum_{t=0}^{N} \frac{\left| \underline{L}[t]-\langle L \rangle \right|}{\langle L \rangle}
-\end{equation}
-Various other possibilities are discussed in REF.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{The Consumer Problem}
@@ -143,6 +118,7 @@ where $\underline{u}$ is the $M$ dimensional column vector that will be optimise
 
 Making these substitutions leads to the new objective function
 \begin{equation}
+\label{furuus}
 f'=\underline{u}^{T}\mathbf{R}\underline{u}+\underline{S}^{T}\underline{u}
 \end{equation}
 which differs from the original objective by a constant and where
@@ -173,6 +149,41 @@ In the following results further constraints are also placed on the absolute max
 
 This specifies the procedure an individual smart thermostat will undertake to form an optimum heating plan. To perform this optimisation using 15 minute control periods and 1 minute cooling simulation requires approximately three seconds as a single threaded process on an Intel i7 processor. This leads to the set of 60 agents used in the evaluations below taking approximately 40 seconds to find the response to a given tariff. The results show that 60 agents still have significant differences in response between draws meaning greater numbers would be desirable. This is clearly therefore a sufficiently expensive to evaluate objective to justify the use of the techniques described below.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{The Supplier Problem}
+In this work we consider an electricity supplier with a set of customers $c \in C$. Each of these customers has a load $l_{c}(t)$  so that the load to be met by the supplier is
+\begin{equation}
+L(t) = \sum_{c \in C} l_{c}(t)
+\end{equation}
+There exists some utility functional for production $U_{p}(L(t))$ which specifies how much it costs the producer to supply this power. $U$ will be based on the sources of power available to the supplier, and the market prices at which it must sell excess and buy shortfall.
+Each consumer is charged at a rate which we allow to be a function of time $\lambda (t)$. The balance of payments for the supplier is therefore
+\begin{equation}
+\Delta = \int_{T}L(t) \lambda(t) \mathrm{d}t - U_{p}(L(t))
+\end{equation}
+and the supplier naturally wishes to choose $\lambda$ to maximize profit (subject to constraints such as not being so high that consumers will choose to use other supplies). To simplify the mathematics for this work we assume that the tariff will balance the component of $U$ which is due to the average power consumption, so are only concerned with the shape of $L$ rather than its absolute value. The following results use the integral of absolute difference from the mean power, but other options are of course available and are discussed in section REF.
+Further, the load is divided by end use into load that is and is not controllable via $\Lambda$ and only that component which is controllable is considered.
+
+To model the response of the full set of customers multiple agents are created using a generative process to determine individual parameters and the sum of their load is used. That is is a single thermal agent from the set of agents in the ensemble $a \in A$ is characterized by a vector $\theta_{a}$ and the optimization process that produces a load profile $\underline{l}$ given a tariff profile $\underline{\Lambda}$ is denoted
+\begin{equation}
+\underline{l}=h(\underline{\Lambda} \mid \theta)
+\end{equation}
+then the load $\underline{L}$ produced by the entire ensemble of agents is
+\begin{equation}
+\underline{L}(\underline{\Lambda}) = \sum_{a \in A} h(\underline{\Lambda} \mid \theta_{a})
+\end{equation}
+To provide an suitable target for optimization the load profile vector must be mapped to a scalar that conveys the utility to the supplier of that load. For the following results the objective used is the normalized integral of the deviation from the mean load.
+\begin{equation}
+U(\underline{L})=\sum_{t=0}^{N} \frac{\left| \underline{L}[t]-\langle L \rangle \right|}{\langle L \rangle}
+\end{equation}
+Various other possibilities are discussed in REF.
+
+There is of course the possibility that a tariff might exist which exactly flattens the load and which can be found in a deterministic manner. For a single agent this would mean a constant power draw and if a value exists that satisfies the agent constraints then the tariff that induces this behaviour can be found by setting the derivative of equation \ref{furuus} with respect to $\underline{u}$ to and rearranging to obtain
+\begin{equation}
+\label{flattar}
+\underline{\Lambda} = -\frac{1}{P}\left( 2\mathbf{R}\underline{u} + 2(\underline{\Psi}-\underline{T}^s)^{T}\mathbf{Q}\boldsymbol{\Phi}\mathbf{D}\right)^{T}\mathbf{D}^T(\mathbf{DD}^{T})^{-1}
+\end{equation}
+However, this problem grows with the number of agents so will become intractable with larger numbers of agents, and since $\underline{\Lambda}$ must satisfy equation \ref{flattar} for some constraint satisfying $\underline{u}$ for every agent present, and maintain the sum of all agent loads exactly flat there is no reason to believe that a solution will exist for non-trivial numbers of agents. Optimizing to move the load as close as possible to the desired shape is therefore the best that is likely to be achieved.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{thermal agent generative process}
 In order for the model to provide useful information it must have similar characteristics to the true demand system. Creating a model with structure and parameters sufficiently well chosen to provide responses that are close to reality is discussed in section REF. For this work more simpler distributions, and nominal values have been used to provide a model that can be used for optimisation and is hopefully not too dissimilar to reality. The full set of parameters used are listed in table \ref{modelpara}
 
@@ -379,8 +390,8 @@ The crucial missing element in this formulation is the state value function whic
 
 
 
-Fast two-step lookahead \url{http://www.robots.ox.ac.uk./~markm/MSGPGO.pdf}
-Using previous result as information for next day, using true load each day to update the model.
+%Fast two-step lookahead \url{http://www.robots.ox.ac.uk./~markm/MSGPGO.pdf}
+%Using previous result as information for next day, using true load each day to update the model.
 
 \section*{}
 \pagebreak
