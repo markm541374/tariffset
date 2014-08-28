@@ -233,11 +233,11 @@ class quadthermo_agent(agent):
 		self.qv=qv
 		self.N=N
 		self.Lambda=Lambda
-		self.tmpl.append((60*self.P*self.Lambda.T*delta)[0,0])
-		print self.tmpl
+		#self.tmpl.append((60*self.P*self.Lambda.T*delta)[0,0])
+		#print self.tmpl
 
 		####
-		self.plotm()
+		#self.plotm()
 		
 		####
 		return [Ti,Te,Ts,delta,qv,N,Lambda]
